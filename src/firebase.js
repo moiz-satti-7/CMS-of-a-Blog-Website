@@ -5,16 +5,31 @@ import { getAuth } from 'firebase/auth';
 import { getAnalytics } from 'firebase/analytics';
 
 // Your web app's Firebase configuration
+// const firebaseConfig = {
+//   apiKey: "AIzaSyBv29BbXk3DCzGLR_uPl3f4rSNUZLBMQ4Q",
+//   authDomain: "test-project-for-ci-cd.firebaseapp.com",
+//   databaseURL: "https://test-project-for-ci-cd-default-rtdb.firebaseio.com",
+//   projectId: "test-project-for-ci-cd",
+//   storageBucket: "test-project-for-ci-cd.appspot.com",
+//   messagingSenderId: "287309597886",
+//   appId: "1:287309597886:web:3e94d531acc5b839de22ef",
+//   measurementId: "G-9D48VZXXEB"
+// };
+
+
+
 const firebaseConfig = {
-  apiKey: "AIzaSyBv29BbXk3DCzGLR_uPl3f4rSNUZLBMQ4Q",
-  authDomain: "test-project-for-ci-cd.firebaseapp.com",
-  databaseURL: "https://test-project-for-ci-cd-default-rtdb.firebaseio.com",
-  projectId: "test-project-for-ci-cd",
-  storageBucket: "test-project-for-ci-cd.appspot.com",
-  messagingSenderId: "287309597886",
-  appId: "1:287309597886:web:3e94d531acc5b839de22ef",
-  measurementId: "G-9D48VZXXEB"
+  apiKey: "AIzaSyDVSaQpbP7_SVlXIKC_6LUf2V7zBsFEwdk",
+  authDomain: "atvandbuggy-dev.firebaseapp.com",
+  databaseURL: "https://atvandbuggy-dev-default-rtdb.firebaseio.com",
+  projectId: "atvandbuggy-dev",
+  storageBucket: "atvandbuggy-dev.appspot.com",
+  messagingSenderId: "755949396350",
+  appId: "1:755949396350:web:025bfd2597e38cc316d32f",
+  measurementId: "G-PF2N4H22EP"
 };
+
+
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);

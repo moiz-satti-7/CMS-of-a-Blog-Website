@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useGlobalState } from '../GlobalState';
 import { db } from '../firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore'; 
-import { TextField, Button, Paper, Typography, Box, Grid, MenuItem, Select, InputLabel, FormControl, Checkbox, ListItemText } from '@mui/material';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
+import { CKEditor } from '@ckeditor/ckeditor5-react';
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
+import { debounce } from 'lodash';
 
 const BlogPosts = () => {
   const { posts } = useGlobalState();
@@ -10,6 +12,12 @@ const BlogPosts = () => {
     title: '',
     slug: '',
     content: '',
+    content_one: '',
+    content_two: '',
+    content_three: '',
+    social_embed: '',
+    image_one: '',
+    image_two: '',
     author_id: '',
     category_id: '',
     tags: [],
@@ -24,6 +32,8 @@ const BlogPosts = () => {
   const [authors, setAuthors] = useState([]);
   const [categories, setCategories] = useState([]);
   const [tags, setTags] = useState([]);
+  const [tagDropdownOpen, setTagDropdownOpen] = useState(false);
+  const tagDropdownRef = useRef(null);
 
   useEffect(() => {
     const fetchAuthors = async () => {
@@ -55,6 +65,12 @@ const BlogPosts = () => {
         title: selectedPost.title || '',
         slug: selectedPost.slug || '',
         content: selectedPost.content || '',
+        content_one: selectedPost.content_one || '',
+        content_two: selectedPost.content_two || '',
+        content_three: selectedPost.content_three || '',
+        social_embed: selectedPost.social_embed || '',
+        image_one: selectedPost.image_one || '',
+        image_two: selectedPost.image_two || '',
         author_id: selectedPost.author_id || '',
         category_id: selectedPost.category_id || '',
         tags: selectedPost.tags || [],
@@ -66,22 +82,15 @@ const BlogPosts = () => {
         views_count: selectedPost.views_count || 0,
       });
     } else {
-      setFormData({
-        title: '',
-        slug: '',
-        content: '',
-        author_id: '',
-        category_id: '',
-        tags: [],
-        status: 'Active',
-        featured_image: '',
-        excerpt: '',
-        seo_title: '',
-        seo_description: '',
-        views_count: 0,
-      });
+      clearForm();
     }
   }, [selectedPost]);
+
+  useEffect(() => {
+    if (formData.social_embed.includes('instagram.com')) {
+      loadInstagramScript();
+    }
+  }, [formData.social_embed]);
 
   const getAuthorName = (author_id) => {
     const author = authors.find(author => author.id === author_id);
@@ -103,6 +112,42 @@ const BlogPosts = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+
+    if (name === 'title') {
+      generateSlug(value);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const { name } = e.target;
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData({ ...formData, [name]: reader.result });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleContentChange = (event, editor) => {
+    const data = editor.getData();
+    setFormData({ ...formData, content: data });
+  };
+
+  const handleContentOneChange = (event, editor) => {
+    const data = editor.getData();
+    setFormData({ ...formData, content_one: data });
+  };
+
+  const handleContentTwoChange = (event, editor) => {
+    const data = editor.getData();
+    setFormData({ ...formData, content_two: data });
+  };
+
+  const handleContentThreeChange = (event, editor) => {
+    const data = editor.getData();
+    setFormData({ ...formData, content_three: data });
   };
 
   const handleAuthorChange = (e) => {
@@ -116,6 +161,14 @@ const BlogPosts = () => {
   const handleTagsChange = (e) => {
     const value = e.target.value;
     setFormData({ ...formData, tags: typeof value === 'string' ? value.split(',') : value });
+  };
+
+  const handleTagCheckboxChange = (tagId) => {
+    const updatedTags = formData.tags.includes(tagId)
+      ? formData.tags.filter(id => id !== tagId)
+      : [...formData.tags, tagId];
+
+    setFormData({ ...formData, tags: updatedTags });
   };
 
   const handleStatusChange = (e) => {
@@ -145,7 +198,7 @@ const BlogPosts = () => {
   const movePost = async (post, newStatus) => {
     const oldCollection = newStatus === 'Active' ? 'archieveblogs' : 'blogpost';
     const newCollection = newStatus === 'Active' ? 'blogpost' : 'archieveblogs';
-    
+
     const postRef = doc(db, oldCollection, post.id);
     await deleteDoc(postRef);
 
@@ -159,6 +212,12 @@ const BlogPosts = () => {
       title: '',
       slug: '',
       content: '',
+      content_one: '',
+      content_two: '',
+      content_three: '',
+      social_embed: '',
+      image_one: '',
+      image_two: '',
       author_id: '',
       category_id: '',
       tags: [],
@@ -171,104 +230,213 @@ const BlogPosts = () => {
     });
   };
 
+  const toggleTagDropdown = () => {
+    setTagDropdownOpen(!tagDropdownOpen);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (tagDropdownRef.current && !tagDropdownRef.current.contains(event.target)) {
+        setTagDropdownOpen(false);
+      }
+    };
+    if (tagDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [tagDropdownOpen]);
+
+  const loadInstagramScript = () => {
+    if (!document.querySelector('script[src="//www.instagram.com/embed.js"]')) {
+      const script = document.createElement('script');
+      script.src = '//www.instagram.com/embed.js';
+      script.async = true;
+      script.defer = true;
+      document.body.appendChild(script);
+    } else {
+      window.instgrm.Embeds.process();
+    }
+  };
+
+  const generateSlug = debounce(async (title) => {
+    let slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    let uniqueSlug = slug;
+    let count = 1;
+
+    const q = query(collection(db, 'blogpost'), where('slug', '==', uniqueSlug));
+    const snapshot = await getDocs(q);
+
+    while (!snapshot.empty) {
+      uniqueSlug = `${slug}-${count}`;
+      count++;
+      const newQuery = query(collection(db, 'blogpost'), where('slug', '==', uniqueSlug));
+      const newSnapshot = await getDocs(newQuery);
+      snapshot = newSnapshot;
+    }
+
+    setFormData((prevFormData) => ({ ...prevFormData, slug: uniqueSlug }));
+  }, 300);
+
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom>Blog Posts</Typography>
-      <Grid container spacing={2}>
+    <div className="container mx-auto p-4">
+      <h4 className="text-3xl font-bold mb-6">Blog Posts</h4>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {posts.map(post => (
-          <Grid item xs={12} md={6} key={post.id}>
-            <Paper elevation={3} sx={{ padding: 2, position: 'relative' }}>
-              {post.featured_image && <img src={post.featured_image} alt="Featured" style={{ width: '100%', height: 'auto' }} />}
-              <Typography variant="h6">{post.title}</Typography>
-              <Typography variant="body2">{post.content}</Typography>
-              <Typography variant="body2">Author: {getAuthorName(post.author_id)}</Typography>
-              <Typography variant="body2">Category: {getCategoryName(post.category_id)}</Typography>
-              <Typography variant="body2">Tags: {getTagNames(post.tags)}</Typography>
-              <Typography variant="body2">Excerpt: {post.excerpt}</Typography>
-              <Typography variant="body2">SEO Title: {post.seo_title}</Typography>
-              <Typography variant="body2">SEO Description: {post.seo_description}</Typography>
-              <Typography variant="body2">Status: {post.status}</Typography>
-              <Button variant="outlined" sx={{ position: 'absolute', top: 8, right: 8 }} onClick={() => setSelectedPost(post)}>Edit/Delete</Button>
-              {post.status === 'Archived' && (
-                <Button variant="outlined" color="primary" onClick={() => movePost(post, 'Active')}>Move to Active</Button>
-              )}
-              {post.status === 'Active' && (
-                <Button variant="outlined" color="secondary" onClick={() => movePost(post, 'Archived')}>Move to Archived</Button>
-              )}
-            </Paper>
-          </Grid>
+          <div key={post.id} className="bg-white shadow-lg rounded-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300">
+            {post.featured_image && <img className="h-48 w-full object-cover" src={post.featured_image} alt="Featured" />}
+            <div className="p-6 flex flex-col justify-between">
+              <div>
+                <h6 className="text-xl font-semibold mb-3">{post.title}</h6>
+                <p className="text-gray-600 mb-3" dangerouslySetInnerHTML={{ __html: post.content.substring(0, 100) + '...' }} />
+                <p className="text-gray-500 mb-2">Author: {getAuthorName(post.author_id)}</p>
+                <p className="text-gray-500 mb-2">Category: {getCategoryName(post.category_id)}</p>
+                <p className="text-gray-500 mb-2">Tags: {getTagNames(post.tags)}</p>
+                <p className="text-gray-500 mb-2">Excerpt: {post.excerpt}</p>
+                <p className="text-gray-500 mb-2">SEO Title: {post.seo_title}</p>
+                <p className="text-gray-500 mb-2">SEO Description: {post.seo_description}</p>
+                <p className="text-gray-500 mb-2">Status: {post.status}</p>
+                <p className="text-gray-500 mb-2">Content One: {post.content_one}</p>
+                {post.image_one && <img className="h-36 w-full object-cover mb-2" src={post.image_one} alt="Image One" />}
+                <p className="text-gray-500 mb-2">Social Embed: <span dangerouslySetInnerHTML={{ __html: post.social_embed }} /></p>
+                <p className="text-gray-500 mb-2">Content Two: {post.content_two}</p>
+                {post.image_two && <img className="h-36 w-full object-cover mb-2" src={post.image_two} alt="Image Two" />}
+                <p className="text-gray-500 mb-2">Content Three: {post.content_three}</p>
+              </div>
+              <div className="flex justify-end mt-4">
+                <button className="text-blue-500 hover:text-blue-700 mr-2" onClick={() => setSelectedPost(post)}>Edit</button>
+                <button className="text-red-500 hover:text-red-700" onClick={() => deletePost(post.id)}>Delete</button>
+                {post.status === 'Archived' && (
+                  <button className="text-green-500 hover:text-green-700 ml-2" onClick={() => movePost(post, 'Active')}>Move to Active</button>
+                )}
+                {post.status === 'Active' && (
+                  <button className="text-yellow-500 hover:text-yellow-700 ml-2" onClick={() => movePost(post, 'Archived')}>Move to Archived</button>
+                )}
+              </div>
+            </div>
+          </div>
         ))}
-      </Grid>
-      <Paper elevation={3} sx={{ padding: 2, marginTop: 2 }}>
-        <Typography variant="h6">{selectedPost ? 'Update Blog Post' : 'Create Blog Post'}</Typography>
-        <Box display="flex" flexDirection="column" gap={2}>
-          <TextField label="Title" variant="outlined" name="title" value={formData.title} onChange={handleInputChange} />
-          <TextField label="Slug" variant="outlined" name="slug" value={formData.slug} onChange={handleInputChange} />
-          <TextField label="Content" variant="outlined" multiline rows={4} name="content" value={formData.content} onChange={handleInputChange} />
-          <FormControl variant="outlined">
-            <InputLabel>Author</InputLabel>
-            <Select
-              value={formData.author_id}
-              onChange={handleAuthorChange}
-              label="Author"
-            >
-              {authors.map(author => (
-                <MenuItem key={author.id} value={author.id}>
-                  {author.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <FormControl variant="outlined">
-            <InputLabel>Category</InputLabel>
-            <Select
-              value={formData.category_id}
-              onChange={handleCategoryChange}
-              label="Category"
-            >
-              {categories.map(category => (
-                <MenuItem key={category.id} value={category.id}>
-                  {category.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <FormControl variant="outlined">
-            <InputLabel>Tags</InputLabel>
-            <Select
-              multiple
-              value={formData.tags}
-              onChange={handleTagsChange}
-              renderValue={(selected) => selected.map(tagId => getTagNames([tagId])).join(', ')}
-            >
-              {tags.map(tag => (
-                <MenuItem key={tag.id} value={tag.id}>
-                  <Checkbox checked={formData.tags.indexOf(tag.id) > -1} />
-                  <ListItemText primary={tag.name} />
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <FormControl variant="outlined">
-            <InputLabel>Status</InputLabel>
-            <Select
-              value={formData.status}
-              onChange={handleStatusChange}
-              label="Status"
-            >
-              <MenuItem value="Active">Active</MenuItem>
-              <MenuItem value="Archived">Archived</MenuItem>
-            </Select>
-          </FormControl>
-          <TextField label="Featured Image URL" variant="outlined" name="featured_image" value={formData.featured_image} onChange={handleInputChange} />
-          <TextField label="Excerpt" variant="outlined" name="excerpt" value={formData.excerpt} onChange={handleInputChange} />
-          <TextField label="SEO Title" variant="outlined" name="seo_title" value={formData.seo_title} onChange={handleInputChange} />
-          <TextField label="SEO Description" variant="outlined" name="seo_description" value={formData.seo_description} onChange={handleInputChange} />
-          <Button variant="contained" color="primary" onClick={selectedPost ? () => updatePost(selectedPost.id) : createPost}>{selectedPost ? 'Update Post' : 'Create Post'}</Button>
-          {selectedPost && <Button variant="contained" color="secondary" onClick={() => deletePost(selectedPost.id)}>Delete Post</Button>}
-        </Box>
-      </Paper>
-    </Box>
+      </div>
+
+      <div className="flex">
+        <div className="bg-white shadow-lg rounded-lg p-6 mt-10 relative w-1/2">
+          <h6 className="text-2xl font-bold mb-6">{selectedPost ? 'Update Blog Post' : 'Create Blog Post'}</h6>
+          <div className="grid grid-cols-1 gap-6">
+            <div className="flex flex-col">
+              <label className="text-gray-700 mb-2" htmlFor="category">Category</label>
+              <select className="border rounded px-4 py-2" id="category" value={formData.category_id} onChange={handleCategoryChange}>
+                <option value="">Select Category</option>
+                {categories.map(category => (
+                  <option key={category.id} value={category.id}>{category.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col">
+              <label className="text-gray-700 mb-2" htmlFor="title">Title</label>
+              <input className="border rounded px-4 py-2" id="title" placeholder="Enter the title" name="title" value={formData.title} onChange={handleInputChange} />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-gray-700 mb-2" htmlFor="slug">Slug</label>
+              <input className="border rounded px-4 py-2" id="slug" placeholder="Enter the slug" name="slug" value={formData.slug} onChange={handleInputChange} />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-gray-700 mb-2" htmlFor="featured_image">Featured Image</label>
+              <input type="file" className="border rounded px-4 py-2" id="featured_image" name="featured_image" onChange={handleFileChange} />
+              {formData.featured_image && (
+                <img src={formData.featured_image} alt="Featured" className="mt-4 max-h-64 object-contain" />
+              )}
+            </div>
+            <h6 className="text-lg font-semibold mt-4">Main Content</h6>
+            <CKEditor editor={ClassicEditor} data={formData.content} onChange={handleContentChange} />
+            <div className="flex flex-col">
+              <label className="text-gray-700 mb-2" htmlFor="image_one">Image One</label>
+              <input type="file" className="border rounded px-4 py-2" id="image_one" name="image_one" onChange={handleFileChange} />
+              {formData.image_one && (
+                <img src={formData.image_one} alt="Image One" className="mt-4 max-h-64 object-contain" />
+              )}
+            </div>
+            <h6 className="text-lg font-semibold mt-4">Content One</h6>
+            <CKEditor editor={ClassicEditor} data={formData.content_one} onChange={handleContentOneChange} />
+            <div className="flex flex-col">
+              <label className="text-gray-700 mb-2" htmlFor="social_embed">Social Embed</label>
+              <input className="border rounded px-4 py-2" id="social_embed" placeholder="Enter the social embed URL" name="social_embed" value={formData.social_embed} onChange={handleInputChange} />
+            </div>
+            <h6 className="text-lg font-semibold mt-4">Content Two</h6>
+            <CKEditor editor={ClassicEditor} data={formData.content_two} onChange={handleContentTwoChange} />
+            <div className="flex flex-col">
+              <label className="text-gray-700 mb-2" htmlFor="image_two">Image Two</label>
+              <input type="file" className="border rounded px-4 py-2" id="image_two" name="image_two" onChange={handleFileChange} />
+              {formData.image_two && (
+                <img src={formData.image_two} alt="Image Two" className="mt-4 max-h-64 object-contain" />
+              )}
+            </div>
+            <h6 className="text-lg font-semibold mt-4">Content Three</h6>
+            <CKEditor editor={ClassicEditor} data={formData.content_three} onChange={handleContentThreeChange} />
+            <div className="flex flex-col">
+              <label className="text-gray-700 mb-2" htmlFor="excerpt">Excerpt (Short Description)</label>
+              <input className="border rounded px-4 py-2" id="excerpt" placeholder="Enter the excerpt" name="excerpt" value={formData.excerpt} onChange={handleInputChange} />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-gray-700 mb-2" htmlFor="author">Author</label>
+              <select className="border rounded px-4 py-2" id="author" value={formData.author_id} onChange={handleAuthorChange}>
+                <option value="">Select Author</option>
+                {authors.map(author => (
+                  <option key={author.id} value={author.id}>{author.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="relative flex flex-col" ref={tagDropdownRef}>
+              <label className="text-gray-700 mb-2" htmlFor="tags">Tags</label>
+              <button
+                className="border rounded px-4 py-5 text-left bg-white"
+                id="tags"
+                onClick={toggleTagDropdown}
+              >
+                {getTagNames(formData.tags)}
+              </button>
+              {tagDropdownOpen && (
+                <div className="absolute bg-white border rounded mt-1 shadow-lg z-20 max-h-60 overflow-y-auto w-full">
+                  {tags.map(tag => (
+                    <label key={tag.id} className="flex items-center p-2">
+                      <input
+                        type="checkbox"
+                        checked={formData.tags.includes(tag.id)}
+                        onChange={() => handleTagCheckboxChange(tag.id)}
+                        className="mr-2"
+                      />
+                      {tag.name}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="flex flex-col">
+              <label className="text-gray-700 mb-2" htmlFor="status">Status</label>
+              <select className="border rounded px-4 py-2" id="status" value={formData.status} onChange={handleStatusChange}>
+                <option value="Active">Active</option>
+                <option value="Archived">Archived</option>
+              </select>
+            </div>
+            <div className="flex flex-col">
+              <label className="text-gray-700 mb-2" htmlFor="seo_title">SEO Title</label>
+              <input className="border rounded px-4 py-2" id="seo_title" placeholder="Enter the SEO title" name="seo_title" value={formData.seo_title} onChange={handleInputChange} />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-gray-700 mb-2" htmlFor="seo_description">SEO Description</label>
+              <input className="border rounded px-4 py-2" id="seo_description" placeholder="Enter the SEO description" name="seo_description" value={formData.seo_description} onChange={handleInputChange} />
+            </div>
+            <button className="bg-blue-600 text-white rounded px-6 py-2 mt-4 hover:bg-blue-700 transition-colors" onClick={selectedPost ? () => updatePost(selectedPost.id) : createPost}>{selectedPost ? 'Update Post' : 'Create Post'}</button>
+            {selectedPost && <button className="bg-red-600 text-white rounded px-6 py-2 mt-2 hover:bg-red-700 transition-colors" onClick={() => deletePost(selectedPost.id)}>Delete Post</button>}
+          </div>
+        </div>
+        <div className="w-1/2 mt-20">
+          <img src="/images/template.jpg" alt="Template Format" />
+        </div>
+      </div>
+    </div>
   );
 };
 
