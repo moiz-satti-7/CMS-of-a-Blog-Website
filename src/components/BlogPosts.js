@@ -338,10 +338,10 @@ const BlogPosts = () => {
               <label className="text-gray-700 mb-2" htmlFor="title">Title</label>
               <input className="border rounded px-4 py-2" id="title" placeholder="Enter the title" name="title" value={formData.title} onChange={handleInputChange} />
             </div>
-            <div className="flex flex-col">
+            {/* <div className="flex flex-col">
               <label className="text-gray-700 mb-2" htmlFor="slug">Slug</label>
               <input className="border rounded px-4 py-2" id="slug" placeholder="Enter the slug" name="slug" value={formData.slug} onChange={handleInputChange} />
-            </div>
+            </div> */}
             <div className="flex flex-col">
               <label className="text-gray-700 mb-2" htmlFor="featured_image">Featured Image</label>
               <input type="file" className="border rounded px-4 py-2" id="featured_image" name="featured_image" onChange={handleFileChange} />
@@ -361,7 +361,7 @@ const BlogPosts = () => {
             <h6 className="text-lg font-semibold mt-4">Content One</h6>
             <CKEditor editor={ClassicEditor} data={formData.content_one} onChange={handleContentOneChange} />
             <div className="flex flex-col">
-              <label className="text-gray-700 mb-2" htmlFor="social_embed">Social Embed</label>
+              <label className="text-gray-700 mb-2" htmlFor="social_embed">Social Embeded Url</label>
               <input className="border rounded px-4 py-2" id="social_embed" placeholder="Enter the social embed URL" name="social_embed" value={formData.social_embed} onChange={handleInputChange} />
             </div>
             <h6 className="text-lg font-semibold mt-4">Content Two</h6>
