@@ -2,12 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useGlobalState } from '../GlobalState';
 import { db } from '../firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
+import { Link } from 'react-router-dom';
 import { CKEditor } from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import { debounce } from 'lodash';
 
 const BlogPosts = () => {
   const { posts } = useGlobalState();
+  const [archivedPosts, setArchivedPosts] = useState([]);
   const [formData, setFormData] = useState({
     title: '',
     slug: '',
@@ -54,9 +56,16 @@ const BlogPosts = () => {
       setTags(tagsList);
     };
 
+    const fetchArchivedPosts = async () => {
+      const archivedSnapshot = await getDocs(collection(db, 'archieveblogs'));
+      const archivedList = archivedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setArchivedPosts(archivedList);
+    };
+
     fetchAuthors();
     fetchCategories();
     fetchTags();
+    fetchArchivedPosts();
   }, []);
 
   useEffect(() => {
@@ -286,38 +295,12 @@ const BlogPosts = () => {
       <h4 className="text-3xl font-bold mb-6">Blog Posts</h4>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {posts.map(post => (
-          <div key={post.id} className="bg-white shadow-lg rounded-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300">
+          <Link to={`/blog/${post.slug}`} key={post.id} className="bg-white shadow-lg rounded-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300 transform hover:scale-105">
             {post.featured_image && <img className="h-48 w-full object-cover" src={post.featured_image} alt="Featured" />}
-            <div className="p-6 flex flex-col justify-between">
-              <div>
-                <h6 className="text-xl font-semibold mb-3">{post.title}</h6>
-                <p className="text-gray-600 mb-3" dangerouslySetInnerHTML={{ __html: post.content.substring(0, 100) + '...' }} />
-                <p className="text-gray-500 mb-2">Author: {getAuthorName(post.author_id)}</p>
-                <p className="text-gray-500 mb-2">Category: {getCategoryName(post.category_id)}</p>
-                <p className="text-gray-500 mb-2">Tags: {getTagNames(post.tags)}</p>
-                <p className="text-gray-500 mb-2">Excerpt: {post.excerpt}</p>
-                <p className="text-gray-500 mb-2">SEO Title: {post.seo_title}</p>
-                <p className="text-gray-500 mb-2">SEO Description: {post.seo_description}</p>
-                <p className="text-gray-500 mb-2">Status: {post.status}</p>
-                <p className="text-gray-500 mb-2">Content One: {post.content_one}</p>
-                {post.image_one && <img className="h-36 w-full object-cover mb-2" src={post.image_one} alt="Image One" />}
-                <p className="text-gray-500 mb-2">Social Embed: <span dangerouslySetInnerHTML={{ __html: post.social_embed }} /></p>
-                <p className="text-gray-500 mb-2">Content Two: {post.content_two}</p>
-                {post.image_two && <img className="h-36 w-full object-cover mb-2" src={post.image_two} alt="Image Two" />}
-                <p className="text-gray-500 mb-2">Content Three: {post.content_three}</p>
-              </div>
-              <div className="flex justify-end mt-4">
-                <button className="text-blue-500 hover:text-blue-700 mr-2" onClick={() => setSelectedPost(post)}>Edit</button>
-                <button className="text-red-500 hover:text-red-700" onClick={() => deletePost(post.id)}>Delete</button>
-                {post.status === 'Archived' && (
-                  <button className="text-green-500 hover:text-green-700 ml-2" onClick={() => movePost(post, 'Active')}>Move to Active</button>
-                )}
-                {post.status === 'Active' && (
-                  <button className="text-yellow-500 hover:text-yellow-700 ml-2" onClick={() => movePost(post, 'Archived')}>Move to Archived</button>
-                )}
-              </div>
+            <div className="p-6">
+              <h6 className="text-xl font-semibold">{post.title}</h6>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
 
@@ -435,6 +418,19 @@ const BlogPosts = () => {
         <div className="w-1/2 mt-20">
           <img src="/images/template.jpg" alt="Template Format" />
         </div>
+      </div>
+      <div>
+      <h4 className="text-3xl font-bold mt-12 mb-6">Archived Blogs</h4>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {archivedPosts.map(post => (
+          <Link to={`/blog/${post.slug}`} key={post.id} className="bg-white shadow-lg rounded-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300 transform hover:scale-105">
+            {post.featured_image && <img className="h-48 w-full object-cover" src={post.featured_image} alt="Featured" />}
+            <div className="p-6">
+              <h6 className="text-xl font-semibold">{post.title}</h6>
+            </div>
+          </Link>
+        ))}
+      </div>
       </div>
     </div>
   );

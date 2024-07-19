@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import { GlobalStateProvider } from './GlobalState';
 import BlogPosts from './components/BlogPosts';
+import BlogDetail from './components/BlogDetail'; // Import BlogDetail
 import Authors from './components/Authors';
 import Categories from './components/Categories';
 import Tags from './components/Tags';
@@ -27,6 +28,7 @@ const App = () => {
           </nav>
           <Routes>
             <Route path="/" element={<BlogPosts />} />
+            <Route path="/blog/:slug" element={<BlogDetail />} /> {/* Add the new route */}
             <Route path="/authors" element={<Authors />} />
             <Route path="/categories" element={<Categories />} />
             <Route path="/tags" element={<Tags />} />
