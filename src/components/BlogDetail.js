@@ -245,15 +245,12 @@ const BlogDetail = () => {
     let uniqueSlug = slug;
     let count = 1;
 
-    const q = query(collection(db, 'blogpost'), where('slug', '==', uniqueSlug));
-    const snapshot = await getDocs(q);
+    let snapshot = await getDocs(query(collection(db, 'blogpost'), where('slug', '==', uniqueSlug)));
 
     while (!snapshot.empty) {
       uniqueSlug = `${slug}-${count}`;
       count++;
-      const newQuery = query(collection(db, 'blogpost'), where('slug', '==', uniqueSlug));
-      const newSnapshot = await getDocs(newQuery);
-      snapshot = newSnapshot;
+      snapshot = await getDocs(query(collection(db, 'blogpost'), where('slug', '==', uniqueSlug)));
     }
 
     setFormData((prevFormData) => ({ ...prevFormData, slug: uniqueSlug }));
@@ -279,16 +276,13 @@ const BlogDetail = () => {
     const newCollection = formData.status === 'Active' ? 'archieveblogs' : 'blogpost';
 
     try {
-      // Use setDoc with the same ID to move the document
       await setDoc(doc(db, newCollection, post.id), {
         ...formData,
         status: formData.status === 'Active' ? 'Archived' : 'Active'
       });
 
-      // Delete the document from the old collection
       await deleteDoc(doc(db, oldCollection, post.id));
 
-      // Update local state to reflect the changes
       setPost({ ...post, status: formData.status === 'Active' ? 'Archived' : 'Active' });
       setFormData({ ...formData, status: formData.status === 'Active' ? 'Archived' : 'Active' });
       navigate('/');
@@ -312,7 +306,7 @@ const BlogDetail = () => {
         <div>
           <button className="bg-blue-600 text-white rounded px-6 py-2 mr-2 hover:bg-blue-700 transition-colors" onClick={toggleModal}>Update</button>
           <button className="bg-red-600 text-white rounded px-6 py-2 mr-2 hover:bg-red-700 transition-colors" onClick={deletePost}>Delete</button>
-          <button className={`bg-${formData.status === 'Active' ? 'yellow' : 'green'}-600 text-black rounded px-6 py-2 hover:bg-${formData.status === 'Active' ? 'yellow' : 'green'}-700 transition-colors`} onClick={archivePost}>
+          <button className={`bg-${formData.status === 'Active' ? 'black' : 'brown'} text-white bg-brown hover:bg-gray-500 rounded px-6 py-2 hover:bg-${formData.status === 'Active' ? 'yellow' : 'green'}-700 transition-colors`} onClick={archivePost}>
             {formData.status === 'Active' ? 'Archive' : 'Unarchive'}
           </button>
         </div>

@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useGlobalState } from '../GlobalState';
 import { db } from '../firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
 import { CKEditor } from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import { debounce } from 'lodash';
 
 const BlogPosts = () => {
-  const { posts } = useGlobalState();
+  const { posts, setPosts } = useGlobalState();
   const [archivedPosts, setArchivedPosts] = useState([]);
   const [formData, setFormData] = useState({
     title: '',
@@ -38,35 +38,47 @@ const BlogPosts = () => {
   const tagDropdownRef = useRef(null);
 
   useEffect(() => {
-    const fetchAuthors = async () => {
-      const authorSnapshot = await getDocs(collection(db, 'author'));
-      const authorsList = authorSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setAuthors(authorsList);
+    const fetchAuthors = () => {
+      onSnapshot(collection(db, 'author'), (snapshot) => {
+        const authorsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setAuthors(authorsList);
+      });
     };
 
-    const fetchCategories = async () => {
-      const categorySnapshot = await getDocs(collection(db, 'category'));
-      const categoriesList = categorySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setCategories(categoriesList);
+    const fetchCategories = () => {
+      onSnapshot(collection(db, 'category'), (snapshot) => {
+        const categoriesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setCategories(categoriesList);
+      });
     };
 
-    const fetchTags = async () => {
-      const tagSnapshot = await getDocs(collection(db, 'tag'));
-      const tagsList = tagSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setTags(tagsList);
+    const fetchTags = () => {
+      onSnapshot(collection(db, 'tag'), (snapshot) => {
+        const tagsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setTags(tagsList);
+      });
     };
 
-    const fetchArchivedPosts = async () => {
-      const archivedSnapshot = await getDocs(collection(db, 'archieveblogs'));
-      const archivedList = archivedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setArchivedPosts(archivedList);
+    const fetchPosts = () => {
+      onSnapshot(collection(db, 'blogpost'), (snapshot) => {
+        const postsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setPosts(postsList);
+      });
+    };
+
+    const fetchArchivedPosts = () => {
+      onSnapshot(collection(db, 'archieveblogs'), (snapshot) => {
+        const archivedList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setArchivedPosts(archivedList);
+      });
     };
 
     fetchAuthors();
     fetchCategories();
     fetchTags();
+    fetchPosts();
     fetchArchivedPosts();
-  }, []);
+  }, [setPosts]);
 
   useEffect(() => {
     if (selectedPost) {
@@ -277,14 +289,13 @@ const BlogPosts = () => {
     let count = 1;
 
     const q = query(collection(db, 'blogpost'), where('slug', '==', uniqueSlug));
-    const snapshot = await getDocs(q);
+    let snapshot = await getDocs(q);
 
     while (!snapshot.empty) {
       uniqueSlug = `${slug}-${count}`;
       count++;
       const newQuery = query(collection(db, 'blogpost'), where('slug', '==', uniqueSlug));
-      const newSnapshot = await getDocs(newQuery);
-      snapshot = newSnapshot;
+      snapshot = await getDocs(newQuery);
     }
 
     setFormData((prevFormData) => ({ ...prevFormData, slug: uniqueSlug }));
