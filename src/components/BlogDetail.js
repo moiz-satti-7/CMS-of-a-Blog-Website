@@ -5,6 +5,8 @@ import { doc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs, s
 import { CKEditor } from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import { debounce } from 'lodash';
+import axios from 'axios';
+
 
 const BlogDetail = () => {
   const { slug } = useParams();
@@ -179,15 +181,27 @@ const BlogDetail = () => {
     }
   };
 
-  const handleFileChange = (e) => {
+  // const handleFileChange = (e) => {
+  //   const { name } = e.target;
+  //   const file = e.target.files[0];
+  //   if (file) {
+  //     const reader = new FileReader();
+  //     reader.onloadend = () => {
+  //       setFormData({ ...formData, [name]: reader.result });
+  //     };
+  //     reader.readAsDataURL(file);
+  //   }
+  // };
+
+
+  const handleFileChange = async (e) => {
     const { name } = e.target;
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData({ ...formData, [name]: reader.result });
-      };
-      reader.readAsDataURL(file);
+      const uploadUrl = await uploadFileToCloudflare(file, file.name);
+      if (uploadUrl) {
+        setFormData({ ...formData, [name]: uploadUrl });
+      }
     }
   };
 
@@ -299,6 +313,46 @@ const BlogDetail = () => {
     return <p>Loading...</p>;
   }
 
+
+
+  const uploadFileToCloudflare = async (file, fileName) => {
+    try {
+      const formData = new FormData();
+      formData.append('image', file, fileName);
+  
+      const response = await axios.post(
+        'https://cloudflare.cedrics.se/api/upload-anb-file-Images-to-cloudflare',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Authorization': `Bearer ${process.env.REACT_APP_CLOUDFLARE_API_KEY}`,
+          },
+        }
+      );
+  
+      if (response.status === 200) {
+        const { image_id: downloadUrl } = response.data;
+        return downloadUrl;
+      } else {
+        console.error(`Error in uploading file: ${response.status}`);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      return error;
+    }
+  };
+
+
+
+  const formatImageUrl = (url) => {
+    return url.startsWith("http")
+      ? url
+      : `https://imagedelivery.net/P3Dzecn-jTdvXXgWWrFQig/${url}/large`;
+  };
+
+
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
@@ -311,7 +365,7 @@ const BlogDetail = () => {
           </button>
         </div>
       </div>
-      {post.featured_image && <img src={post.featured_image} alt={post.title} className="mb-6 w-full object-cover" />}
+      {post.featured_image && <img src={formatImageUrl(post.featured_image)} alt={post.title} className="mb-6 w-full object-cover" />}
       <div dangerouslySetInnerHTML={{ __html: post.content }} />
       <div className="mt-6">
         <p><strong>Author:</strong> {authorName}</p>
@@ -332,7 +386,7 @@ const BlogDetail = () => {
       {post.image_one && (
         <div className="mt-6">
           <h3 className="text-2xl font-semibold mb-4">Image One</h3>
-          <img src={post.image_one} alt="Image One" className="mb-6 w-full object-cover" />
+          <img src={formatImageUrl(post.image_one)} alt="Image One" className="mb-6 w-full object-cover" />
         </div>
       )}
       {post.social_embed && (
@@ -350,7 +404,7 @@ const BlogDetail = () => {
       {post.image_two && (
         <div className="mt-6">
           <h3 className="text-2xl font-semibold mb-4">Image Two</h3>
-          <img src={post.image_two} alt="Image Two" className="mb-6 w-full object-cover" />
+          <img src={formatImageUrl(post.image_two)} alt="Image Two" className="mb-6 w-full object-cover" />
         </div>
       )}
       {post.content_three && (
