@@ -143,14 +143,14 @@ const uploadFileToCloudflare = async (file, fileName) => {
     <div className="container mx-auto p-4">
       <h1 className="text-4xl font-bold mb-4">Authors</h1>
       {error && <p className="text-red-500">{error}</p>}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {authors.map(author => (
           <div key={author.id} className="bg-white shadow-md p-4 rounded">
             <h2 className="text-xl font-semibold">{author.name}</h2>
             <p>{author.bio}</p>
-            {author.author_image && <img src={formatImageUrl(author.author_image)} alt={author.name} className="w-full h-auto mt-2" />}
-            <button className="bg-yellow-500 text-white p-2 rounded mt-2" onClick={() => editAuthor(author)}>Edit</button>
-            <button className="bg-red-500 text-white p-2 rounded mt-2 ml-2" onClick={() => deleteAuthor(author.id)}>Delete</button>
+            {author.author_image && <img src={formatImageUrl(author.author_image)} alt={author.name} className="h-96 w-full object-cover mt-3" />}
+            <button className="bg-yellow-500 text-white px-10 py-2 rounded mt-4" onClick={() => editAuthor(author)}>Edit</button>
+            <button className="bg-red-500 text-white px-10 py-2 rounded mt-4 ml-4" onClick={() => deleteAuthor(author.id)}>Delete</button>
           </div>
         ))}
       </div>

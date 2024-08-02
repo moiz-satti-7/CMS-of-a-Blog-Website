@@ -7,7 +7,6 @@ import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import { debounce } from 'lodash';
 import axios from 'axios';
 
-
 const BlogDetail = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -181,19 +180,6 @@ const BlogDetail = () => {
     }
   };
 
-  // const handleFileChange = (e) => {
-  //   const { name } = e.target;
-  //   const file = e.target.files[0];
-  //   if (file) {
-  //     const reader = new FileReader();
-  //     reader.onloadend = () => {
-  //       setFormData({ ...formData, [name]: reader.result });
-  //     };
-  //     reader.readAsDataURL(file);
-  //   }
-  // };
-
-
   const handleFileChange = async (e) => {
     const { name } = e.target;
     const file = e.target.files[0];
@@ -203,6 +189,10 @@ const BlogDetail = () => {
         setFormData({ ...formData, [name]: uploadUrl });
       }
     }
+  };
+
+  const handleImageRemove = (name) => {
+    setFormData({ ...formData, [name]: '' });
   };
 
   const handleContentChange = (event, editor) => {
@@ -313,8 +303,6 @@ const BlogDetail = () => {
     return <p>Loading...</p>;
   }
 
-
-
   const uploadFileToCloudflare = async (file, fileName) => {
     try {
       const formData = new FormData();
@@ -344,14 +332,13 @@ const BlogDetail = () => {
     }
   };
 
-
-
   const formatImageUrl = (url) => {
-    return url.startsWith("http")
+    return url && url.startsWith("http")
       ? url
-      : `https://imagedelivery.net/P3Dzecn-jTdvXXgWWrFQig/${url}/large`;
+      : url
+      ? `https://imagedelivery.net/P3Dzecn-jTdvXXgWWrFQig/${url}/large`
+      : '';
   };
-
 
   return (
     <div className="container mx-auto p-4">
@@ -360,12 +347,23 @@ const BlogDetail = () => {
         <div>
           <button className="bg-blue-600 text-white rounded px-6 py-2 mr-2 hover:bg-blue-700 transition-colors" onClick={toggleModal}>Update</button>
           <button className="bg-red-600 text-white rounded px-6 py-2 mr-2 hover:bg-red-700 transition-colors" onClick={deletePost}>Delete</button>
-          <button className={`bg-${formData.status === 'Active' ? 'black' : 'brown'} text-white bg-brown hover:bg-gray-500 rounded px-6 py-2 hover:bg-${formData.status === 'Active' ? 'yellow' : 'green'}-700 transition-colors`} onClick={archivePost}>
+          <button className={`bg-${formData.status === 'Active' ? 'black' : 'green'} text-white bg-brown hover:bg-gray-500 rounded px-6 py-2 hover:bg-${formData.status === 'Active' ? 'yellow' : 'green'}-700 transition-colors`} onClick={archivePost}>
             {formData.status === 'Active' ? 'Archive' : 'Unarchive'}
           </button>
         </div>
       </div>
-      {post.featured_image && <img src={formatImageUrl(post.featured_image)} alt={post.title} className="mb-6 w-full object-cover" />}
+      <div className="w-3/4 h-3/4">
+  {post.featured_image && (
+    <div className="mb-6 aspect-w-3 aspect-h-4">
+      <img
+        src={formatImageUrl(post.featured_image)}
+        alt={post.title}
+        className="w-full h-full object-cover"
+      />
+    </div>
+  )}
+</div>
+
       <div dangerouslySetInnerHTML={{ __html: post.content }} />
       <div className="mt-6">
         <p><strong>Author:</strong> {authorName}</p>
@@ -383,12 +381,20 @@ const BlogDetail = () => {
           <div dangerouslySetInnerHTML={{ __html: post.content_one }} />
         </div>
       )}
+      
       {post.image_one && (
-        <div className="mt-6">
-          <h3 className="text-2xl font-semibold mb-4">Image One</h3>
-          <img src={formatImageUrl(post.image_one)} alt="Image One" className="mb-6 w-full object-cover" />
-        </div>
-      )}
+  <div className="mt-6">
+    <h3 className="text-2xl font-semibold mb-4">Image One</h3>
+    <div className="mb-6 aspect-w-4 aspect-h-3">
+      <img
+        src={formatImageUrl(post.image_one)}
+        alt="Image One"
+        className="w-full h-full object-cover"
+      />
+    </div>
+  </div>
+)}
+
       {post.social_embed && (
         <div className="mt-6">
           <h3 className="text-2xl font-semibold mb-4">Social Embed</h3>
@@ -439,7 +445,12 @@ const BlogDetail = () => {
                 <label className="text-gray-700 mb-2" htmlFor="featured_image">Featured Image</label>
                 <input type="file" className="border rounded px-4 py-2" id="featured_image" name="featured_image" onChange={handleFileChange} />
                 {formData.featured_image && (
-                  <img src={formData.featured_image} alt="Featured" className="mt-4 max-h-64 object-contain" />
+                  <div>
+                    <img src={formatImageUrl(formData.featured_image)} alt="Featured" className="mt-4 max-h-64 object-contain" />
+                    <button className="bg-red-600 text-white rounded px-4 py-2 mt-2 hover:bg-red-700 transition-colors" onClick={() => handleImageRemove('featured_image')}>
+                      Remove
+                    </button>
+                  </div>
                 )}
               </div>
               <h6 className="text-lg font-semibold mt-4">Main Content</h6>
@@ -448,7 +459,12 @@ const BlogDetail = () => {
                 <label className="text-gray-700 mb-2" htmlFor="image_one">Image One</label>
                 <input type="file" className="border rounded px-4 py-2" id="image_one" name="image_one" onChange={handleFileChange} />
                 {formData.image_one && (
-                  <img src={formData.image_one} alt="Image One" className="mt-4 max-h-64 object-contain" />
+                  <div>
+                    <img src={formatImageUrl(formData.image_one)} alt="Image One" className="mt-4 max-h-64 object-contain" />
+                    <button className="bg-red-600 text-white rounded px-4 py-2 mt-2 hover:bg-red-700 transition-colors" onClick={() => handleImageRemove('image_one')}>
+                      Remove
+                    </button>
+                  </div>
                 )}
               </div>
               <h6 className="text-lg font-semibold mt-4">Content One</h6>
@@ -463,7 +479,12 @@ const BlogDetail = () => {
                 <label className="text-gray-700 mb-2" htmlFor="image_two">Image Two</label>
                 <input type="file" className="border rounded px-4 py-2" id="image_two" name="image_two" onChange={handleFileChange} />
                 {formData.image_two && (
-                  <img src={formData.image_two} alt="Image Two" className="mt-4 max-h-64 object-contain" />
+                  <div>
+                    <img src={formatImageUrl(formData.image_two)}  alt="Image Two" className="mt-4 max-h-64 object-contain" />
+                    <button className="bg-red-600 text-white rounded px-2 py-1 mt-2 hover:bg-red-700 transition-colors" onClick={() => handleImageRemove('image_two')}>
+                      Remove
+                    </button>
+                  </div>
                 )}
               </div>
               <h6 className="text-lg font-semibold mt-4">Content Three</h6>
@@ -506,13 +527,13 @@ const BlogDetail = () => {
                   </div>
                 )}
               </div>
-              <div className="flex flex-col">
+              {/* <div className="flex flex-col">
                 <label className="text-gray-700 mb-2" htmlFor="status">Status</label>
                 <select className="border rounded px-4 py-2" id="status" value={formData.status} onChange={handleStatusChange}>
                   <option value="Active">Active</option>
                   <option value="Archived">Archived</option>
                 </select>
-              </div>
+              </div> */}
               <div className="flex flex-col">
                 <label className="text-gray-700 mb-2" htmlFor="seo_title">SEO Title</label>
                 <input className="border rounded px-4 py-2" id="seo_title" placeholder="Enter the SEO title" name="seo_title" value={formData.seo_title} onChange={handleInputChange} />
