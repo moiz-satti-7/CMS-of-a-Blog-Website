@@ -219,7 +219,7 @@ const BlogPosts = () => {
     }
   
     // Construct the blog post URL
-    const blogPostUrl = `https://dev-v2.atvandbuggy.com/?_vercel_share=${newBlogRef.id}`;
+    const blogPostUrl = `https://dev-v2.atvandbuggy.com?_vercel_share=ZIVIOzCMtBMX3t6u66ruikvPIkRhL41R=${newBlogRef.id}`;
   
     // Fetch all subscribers
     const subscribersSnapshot = await getDocs(collection(db, 'blogsSubscribers'));
