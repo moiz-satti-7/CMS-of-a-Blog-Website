@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { doc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs, setDoc } from 'firebase/firestore';
-import { CKEditor } from '@ckeditor/ckeditor5-react';
-import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import { debounce } from 'lodash';
 import axios from 'axios';
 
@@ -195,24 +195,20 @@ const BlogDetail = () => {
     setFormData({ ...formData, [name]: '' });
   };
 
-  const handleContentChange = (event, editor) => {
-    const data = editor.getData();
-    setFormData({ ...formData, content: data });
+  const handleContentChange = (content) => {
+    setFormData({ ...formData, content });
   };
 
-  const handleContentOneChange = (event, editor) => {
-    const data = editor.getData();
-    setFormData({ ...formData, content_one: data });
+  const handleContentOneChange = (content) => {
+    setFormData({ ...formData, content_one: content });
   };
 
-  const handleContentTwoChange = (event, editor) => {
-    const data = editor.getData();
-    setFormData({ ...formData, content_two: data });
+  const handleContentTwoChange = (content) => {
+    setFormData({ ...formData, content_two: content });
   };
 
-  const handleContentThreeChange = (event, editor) => {
-    const data = editor.getData();
-    setFormData({ ...formData, content_three: data });
+  const handleContentThreeChange = (content) => {
+    setFormData({ ...formData, content_three: content });
   };
 
   const handleAuthorChange = (e) => {
@@ -340,6 +336,29 @@ const BlogDetail = () => {
       : '';
   };
 
+  const modules = {
+    toolbar: [
+      [{ header: [1, 2, 3, 4, 5, 6, false] }], // Headings h1 to h6
+      [{ size: ["small", false, "large", "huge"] }], // Custom text sizes
+      ["bold", "italic", "underline"], // Text styling options
+      [{ list: "ordered" }, { list: "bullet" }], // Lists
+      ["link", "image"], // Link and image
+      ["clean"], // Remove formatting
+    ],
+  };
+  
+  const formats = [
+    "header",
+    "size",
+    "bold",
+    "italic",
+    "underline",
+    "list",
+    "bullet",
+    "link",
+    "image",
+  ];
+
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
@@ -454,7 +473,9 @@ const BlogDetail = () => {
                 )}
               </div>
               <h6 className="text-lg font-semibold mt-4">Main Content</h6>
-              <CKEditor editor={ClassicEditor} data={formData.content} onChange={handleContentChange} />
+              <ReactQuill 
+            className="mb-20"
+              value={formData.content} onChange={handleContentChange} modules={modules} formats={formats} />
               <div className="flex flex-col">
                 <label className="text-gray-700 mb-2" htmlFor="image_one">Image One</label>
                 <input type="file" className="border rounded px-4 py-2" id="image_one" name="image_one" onChange={handleFileChange} />
@@ -468,13 +489,17 @@ const BlogDetail = () => {
                 )}
               </div>
               <h6 className="text-lg font-semibold mt-4">Content One</h6>
-              <CKEditor editor={ClassicEditor} data={formData.content_one} onChange={handleContentOneChange} />
+              <ReactQuill 
+            className="mb-20"
+              value={formData.content_one} onChange={handleContentOneChange} modules={modules} formats={formats} />
               <div className="flex flex-col">
                 <label className="text-gray-700 mb-2" htmlFor="social_embed">Social Embeded Url</label>
                 <input className="border rounded px-4 py-2" id="social_embed" placeholder="Enter the social embed URL" name="social_embed" value={formData.social_embed} onChange={handleInputChange} />
               </div>
               <h6 className="text-lg font-semibold mt-4">Content Two</h6>
-              <CKEditor editor={ClassicEditor} data={formData.content_two} onChange={handleContentTwoChange} />
+              <ReactQuill 
+            className="mb-20"
+              value={formData.content_two} onChange={handleContentTwoChange} modules={modules} formats={formats} />
               <div className="flex flex-col">
                 <label className="text-gray-700 mb-2" htmlFor="image_two">Image Two</label>
                 <input type="file" className="border rounded px-4 py-2" id="image_two" name="image_two" onChange={handleFileChange} />
@@ -488,7 +513,9 @@ const BlogDetail = () => {
                 )}
               </div>
               <h6 className="text-lg font-semibold mt-4">Content Three</h6>
-              <CKEditor editor={ClassicEditor} data={formData.content_three} onChange={handleContentThreeChange} />
+              <ReactQuill 
+            className="mb-20"
+              value={formData.content_three} onChange={handleContentThreeChange} modules={modules} formats={formats} />
               <div className="flex flex-col">
                 <label className="text-gray-700 mb-2" htmlFor="excerpt">Excerpt (Short Description)</label>
                 <input className="border rounded px-4 py-2" id="excerpt" placeholder="Enter the excerpt" name="excerpt" value={formData.excerpt} onChange={handleInputChange} />

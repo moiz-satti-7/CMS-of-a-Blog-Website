@@ -1,35 +1,70 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useGlobalState } from '../GlobalState';
-import { db } from '../firebase';
-import { collection, getDocs, addDoc, updateDoc, getDoc, deleteDoc, doc, onSnapshot, query, where } from 'firebase/firestore';
+import React, { useState, useEffect, useRef } from "react";
+import { useGlobalState } from "../GlobalState";
+import { db } from "../firebase";
+import {
+  collection,
+  getDocs,
+  addDoc,
+  updateDoc,
+  getDoc,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  query,
+  where,
+} from "firebase/firestore";
 
-import { Link } from 'react-router-dom';
-import { CKEditor } from '@ckeditor/ckeditor5-react';
-import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
-import { debounce } from 'lodash';
-import axios from 'axios';
+import { Link } from "react-router-dom";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css"; // Import the styles
+import { debounce } from "lodash";
+import axios from "axios";
+
+// Quill editor modules and formats configuration
+const modules = {
+  toolbar: [
+    [{ header: [1, 2, 3, 4, 5, 6, false] }], // Headings h1 to h6
+    [{ size: ["small", false, "large", "huge"] }], // Custom text sizes
+    ["bold", "italic", "underline"], // Text styling options
+    [{ list: "ordered" }, { list: "bullet" }], // Lists
+    ["link", "image"], // Link and image
+    ["clean"], // Remove formatting
+  ],
+};
+
+const formats = [
+  "header",
+  "size",
+  "bold",
+  "italic",
+  "underline",
+  "list",
+  "bullet",
+  "link",
+  "image",
+];
 
 const BlogPosts = () => {
   const { posts, setPosts } = useGlobalState();
   const [archivedPosts, setArchivedPosts] = useState([]);
   const [formData, setFormData] = useState({
-    title: '',
-    slug: '',
-    content: '',
-    content_one: '',
-    content_two: '',
-    content_three: '',
-    social_embed: '',
-    image_one: '',
-    image_two: '',
-    author_id: '',
-    category_id: '',
+    title: "",
+    slug: "",
+    content: "",
+    content_one: "",
+    content_two: "",
+    content_three: "",
+    social_embed: "",
+    image_one: "",
+    image_two: "",
+    author_id: "",
+    category_id: "",
     tags: [],
-    status: 'Active',
-    featured_image: '',
-    excerpt: '',
-    seo_title: '',
-    seo_description: '',
+    status: "Active",
+    featured_image: "",
+    excerpt: "",
+    seo_title: "",
+    seo_description: "",
     views_count: 0,
   });
   const [selectedPost, setSelectedPost] = useState(null);
@@ -41,36 +76,51 @@ const BlogPosts = () => {
 
   useEffect(() => {
     const fetchAuthors = () => {
-      onSnapshot(collection(db, 'author'), (snapshot) => {
-        const authorsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      onSnapshot(collection(db, "author"), (snapshot) => {
+        const authorsList = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
         setAuthors(authorsList);
       });
     };
 
     const fetchCategories = () => {
-      onSnapshot(collection(db, 'category'), (snapshot) => {
-        const categoriesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      onSnapshot(collection(db, "category"), (snapshot) => {
+        const categoriesList = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
         setCategories(categoriesList);
       });
     };
 
     const fetchTags = () => {
-      onSnapshot(collection(db, 'tag'), (snapshot) => {
-        const tagsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      onSnapshot(collection(db, "tag"), (snapshot) => {
+        const tagsList = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
         setTags(tagsList);
       });
     };
 
     const fetchPosts = () => {
-      onSnapshot(collection(db, 'blogpost'), (snapshot) => {
-        const postsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      onSnapshot(collection(db, "blogpost"), (snapshot) => {
+        const postsList = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
         setPosts(postsList);
       });
     };
 
     const fetchArchivedPosts = () => {
-      onSnapshot(collection(db, 'archieveblogs'), (snapshot) => {
-        const archivedList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      onSnapshot(collection(db, "archieveblogs"), (snapshot) => {
+        const archivedList = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
         setArchivedPosts(archivedList);
       });
     };
@@ -85,23 +135,23 @@ const BlogPosts = () => {
   useEffect(() => {
     if (selectedPost) {
       setFormData({
-        title: selectedPost.title || '',
-        slug: selectedPost.slug || '',
-        content: selectedPost.content || '',
-        content_one: selectedPost.content_one || '',
-        content_two: selectedPost.content_two || '',
-        content_three: selectedPost.content_three || '',
-        social_embed: selectedPost.social_embed || '',
-        image_one: selectedPost.image_one || '',
-        image_two: selectedPost.image_two || '',
-        author_id: selectedPost.author_id || '',
-        category_id: selectedPost.category_id || '',
+        title: selectedPost.title || "",
+        slug: selectedPost.slug || "",
+        content: selectedPost.content || "",
+        content_one: selectedPost.content_one || "",
+        content_two: selectedPost.content_two || "",
+        content_three: selectedPost.content_three || "",
+        social_embed: selectedPost.social_embed || "",
+        image_one: selectedPost.image_one || "",
+        image_two: selectedPost.image_two || "",
+        author_id: selectedPost.author_id || "",
+        category_id: selectedPost.category_id || "",
         tags: selectedPost.tags || [],
-        status: selectedPost.status || 'Active',
-        featured_image: selectedPost.featured_image || '',
-        excerpt: selectedPost.excerpt || '',
-        seo_title: selectedPost.seo_title || '',
-        seo_description: selectedPost.seo_description || '',
+        status: selectedPost.status || "Active",
+        featured_image: selectedPost.featured_image || "",
+        excerpt: selectedPost.excerpt || "",
+        seo_title: selectedPost.seo_title || "",
+        seo_description: selectedPost.seo_description || "",
         views_count: selectedPost.views_count || 0,
       });
     } else {
@@ -110,33 +160,35 @@ const BlogPosts = () => {
   }, [selectedPost]);
 
   useEffect(() => {
-    if (formData.social_embed.includes('instagram.com')) {
+    if (formData.social_embed.includes("instagram.com")) {
       loadInstagramScript();
     }
   }, [formData.social_embed]);
 
   const getAuthorName = (author_id) => {
-    const author = authors.find(author => author.id === author_id);
-    return author ? author.name : 'Unknown';
+    const author = authors.find((author) => author.id === author_id);
+    return author ? author.name : "Unknown";
   };
 
   const getCategoryName = (category_id) => {
-    const category = categories.find(category => category.id === category_id);
-    return category ? category.name : 'Unknown';
+    const category = categories.find((category) => category.id === category_id);
+    return category ? category.name : "Unknown";
   };
 
   const getTagNames = (tagIds) => {
-    return tagIds.map(tagId => {
-      const tag = tags.find(tag => tag.id === tagId);
-      return tag ? tag.name : 'Unknown';
-    }).join(', ');
+    return tagIds
+      .map((tagId) => {
+        const tag = tags.find((tag) => tag.id === tagId);
+        return tag ? tag.name : "Unknown";
+      })
+      .join(", ");
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
 
-    if (name === 'title') {
+    if (name === "title") {
       generateSlug(value);
     }
   };
@@ -152,24 +204,20 @@ const BlogPosts = () => {
     }
   };
 
-  const handleContentChange = (event, editor) => {
-    const data = editor.getData();
-    setFormData({ ...formData, content: data });
+  const handleContentChange = (content) => {
+    setFormData({ ...formData, content });
   };
 
-  const handleContentOneChange = (event, editor) => {
-    const data = editor.getData();
-    setFormData({ ...formData, content_one: data });
+  const handleContentOneChange = (content) => {
+    setFormData({ ...formData, content_one: content });
   };
 
-  const handleContentTwoChange = (event, editor) => {
-    const data = editor.getData();
-    setFormData({ ...formData, content_two: data });
+  const handleContentTwoChange = (content) => {
+    setFormData({ ...formData, content_two: content });
   };
 
-  const handleContentThreeChange = (event, editor) => {
-    const data = editor.getData();
-    setFormData({ ...formData, content_three: data });
+  const handleContentThreeChange = (content) => {
+    setFormData({ ...formData, content_three: content });
   };
 
   const handleAuthorChange = (e) => {
@@ -182,12 +230,15 @@ const BlogPosts = () => {
 
   const handleTagsChange = (e) => {
     const value = e.target.value;
-    setFormData({ ...formData, tags: typeof value === 'string' ? value.split(',') : value });
+    setFormData({
+      ...formData,
+      tags: typeof value === "string" ? value.split(",") : value,
+    });
   };
 
   const handleTagCheckboxChange = (tagId) => {
     const updatedTags = formData.tags.includes(tagId)
-      ? formData.tags.filter(id => id !== tagId)
+      ? formData.tags.filter((id) => id !== tagId)
       : [...formData.tags, tagId];
 
     setFormData({ ...formData, tags: updatedTags });
@@ -197,57 +248,60 @@ const BlogPosts = () => {
     setFormData({ ...formData, status: e.target.value });
   };
 
-
-
   const createPost = async () => {
     await handleFileUploads();
-    const collectionName = formData.status === 'Active' ? 'blogpost' : 'archieveblogs';
-  
+    const collectionName =
+      formData.status === "Active" ? "blogpost" : "archieveblogs";
+
     // Add the new blog post to Firestore
-    const newBlogRef = await addDoc(collection(db, collectionName), { ...formData, published_date: new Date() });
-  
+    const newBlogRef = await addDoc(collection(db, collectionName), {
+      ...formData,
+      published_date: new Date(),
+    });
+
     // Fetch the category name using the category_id
-    let categoryName = '';
+    let categoryName = "";
     if (formData.category_id) {
-      const categoryDocRef = doc(db, 'category', formData.category_id);
+      const categoryDocRef = doc(db, "category", formData.category_id);
       const categoryDocSnap = await getDoc(categoryDocRef);
       if (categoryDocSnap.exists()) {
         categoryName = categoryDocSnap.data().name;
       } else {
-        console.error('No such category!');
+        console.error("No such category!");
       }
     }
-  
+
     // Construct the blog post URL
     const blogPostUrl = `https://dev-v2.atvandbuggy.com?_vercel_share=ZIVIOzCMtBMX3t6u66ruikvPIkRhL41R=${newBlogRef.id}`;
-  
+
     // Fetch all subscribers
-    const subscribersSnapshot = await getDocs(collection(db, 'blogsSubscribers'));
-    const subscribers = subscribersSnapshot.docs.map(doc => doc.data().email);
-  
+    const subscribersSnapshot = await getDocs(
+      collection(db, "blogsSubscribers")
+    );
+    const subscribers = subscribersSnapshot.docs.map((doc) => doc.data().email);
+
     // Send email to all subscribers
     try {
-      await axios.post('http://localhost:5000/api/sendEmail', {
-        type: 'newBlog',
+      await axios.post("http://localhost:5000/api/sendEmail", {
+        type: "newBlog",
         title: formData.title,
         category: categoryName, // Send the actual category name
         blogPostUrl, // Include the blog post URL
         subscribers,
       });
-      alert('Blog post created and notification emails sent successfully!');
+      alert("Blog post created and notification emails sent successfully!");
     } catch (error) {
-      console.error('Error sending notification emails:', error);
-      alert('Blog post created, but failed to send notification emails.');
+      console.error("Error sending notification emails:", error);
+      alert("Blog post created, but failed to send notification emails.");
     }
-  
+
     clearForm();
   };
-  
-
 
   const updatePost = async (id) => {
     await handleFileUploads();
-    const collectionName = formData.status === 'Active' ? 'blogpost' : 'archieveblogs';
+    const collectionName =
+      formData.status === "Active" ? "blogpost" : "archieveblogs";
     const postRef = doc(db, collectionName, id);
     await updateDoc(postRef, { ...formData, updated_date: new Date() });
     setSelectedPost(null);
@@ -255,14 +309,15 @@ const BlogPosts = () => {
   };
 
   const deletePost = async (id) => {
-    const collectionName = formData.status === 'Active' ? 'blogpost' : 'archieveblogs';
+    const collectionName =
+      formData.status === "Active" ? "blogpost" : "archieveblogs";
     const postRef = doc(db, collectionName, id);
     await deleteDoc(postRef);
   };
 
   const movePost = async (post, newStatus) => {
-    const oldCollection = newStatus === 'Active' ? 'archieveblogs' : 'blogpost';
-    const newCollection = newStatus === 'Active' ? 'blogpost' : 'archieveblogs';
+    const oldCollection = newStatus === "Active" ? "archieveblogs" : "blogpost";
+    const newCollection = newStatus === "Active" ? "blogpost" : "archieveblogs";
 
     const postRef = doc(db, oldCollection, post.id);
     await deleteDoc(postRef);
@@ -273,40 +328,46 @@ const BlogPosts = () => {
   };
 
   const handleFileUploads = async () => {
-    const fileFields = ['featured_image', 'image_one', 'image_two'];
+    const fileFields = ["featured_image", "image_one", "image_two"];
     const uploadPromises = fileFields.map(async (field) => {
       const fileInput = document.getElementById(field);
       if (fileInput && fileInput.files[0]) {
-        const uploadUrl = await uploadFileToCloudflare(fileInput.files[0], fileInput.files[0].name);
+        const uploadUrl = await uploadFileToCloudflare(
+          fileInput.files[0],
+          fileInput.files[0].name
+        );
         return { [field]: uploadUrl };
       }
       return null;
     });
 
     const results = await Promise.all(uploadPromises);
-    const updatedData = results.reduce((acc, curr) => (curr ? { ...acc, ...curr } : acc), {});
+    const updatedData = results.reduce(
+      (acc, curr) => (curr ? { ...acc, ...curr } : acc),
+      {}
+    );
     setFormData((prevData) => ({ ...prevData, ...updatedData }));
   };
 
   const clearForm = () => {
     setFormData({
-      title: '',
-      slug: '',
-      content: '',
-      content_one: '',
-      content_two: '',
-      content_three: '',
-      social_embed: '',
-      image_one: '',
-      image_two: '',
-      author_id: '',
-      category_id: '',
+      title: "",
+      slug: "",
+      content: "",
+      content_one: "",
+      content_two: "",
+      content_three: "",
+      social_embed: "",
+      image_one: "",
+      image_two: "",
+      author_id: "",
+      category_id: "",
       tags: [],
-      status: 'Active',
-      featured_image: '',
-      excerpt: '',
-      seo_title: '',
-      seo_description: '',
+      status: "Active",
+      featured_image: "",
+      excerpt: "",
+      seo_title: "",
+      seo_description: "",
       views_count: 0,
     });
   };
@@ -317,24 +378,27 @@ const BlogPosts = () => {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (tagDropdownRef.current && !tagDropdownRef.current.contains(event.target)) {
+      if (
+        tagDropdownRef.current &&
+        !tagDropdownRef.current.contains(event.target)
+      ) {
         setTagDropdownOpen(false);
       }
     };
     if (tagDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     } else {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     }
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [tagDropdownOpen]);
 
   const loadInstagramScript = () => {
     if (!document.querySelector('script[src="//www.instagram.com/embed.js"]')) {
-      const script = document.createElement('script');
-      script.src = '//www.instagram.com/embed.js';
+      const script = document.createElement("script");
+      script.src = "//www.instagram.com/embed.js";
       script.async = true;
       script.defer = true;
       document.body.appendChild(script);
@@ -344,17 +408,26 @@ const BlogPosts = () => {
   };
 
   const generateSlug = debounce(async (title) => {
-    let slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    let slug = title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)+/g, "");
     let uniqueSlug = slug;
     let count = 1;
 
-    const q = query(collection(db, 'blogpost'), where('slug', '==', uniqueSlug));
+    const q = query(
+      collection(db, "blogpost"),
+      where("slug", "==", uniqueSlug)
+    );
     let snapshot = await getDocs(q);
 
     while (!snapshot.empty) {
       uniqueSlug = `${slug}-${count}`;
       count++;
-      const newQuery = query(collection(db, 'blogpost'), where('slug', '==', uniqueSlug));
+      const newQuery = query(
+        collection(db, "blogpost"),
+        where("slug", "==", uniqueSlug)
+      );
       snapshot = await getDocs(newQuery);
     }
 
@@ -364,19 +437,19 @@ const BlogPosts = () => {
   const uploadFileToCloudflare = async (file, fileName) => {
     try {
       const formData = new FormData();
-      formData.append('image', file, fileName);
-  
+      formData.append("image", file, fileName);
+
       const response = await axios.post(
-        'https://cloudflare.cedrics.se/api/upload-anb-file-Images-to-cloudflare',
+        "https://cloudflare.cedrics.se/api/upload-anb-file-Images-to-cloudflare",
         formData,
         {
           headers: {
-            'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${process.env.REACT_APP_CLOUDFLARE_API_KEY}`,
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${process.env.REACT_APP_CLOUDFLARE_API_KEY}`,
           },
         }
       );
-  
+
       if (response.status === 200) {
         const { image_id: downloadUrl } = response.data;
         return downloadUrl;
@@ -385,7 +458,7 @@ const BlogPosts = () => {
         return null;
       }
     } catch (error) {
-      console.error('Error uploading file:', error);
+      console.error("Error uploading file:", error);
       return error;
     }
   };
@@ -400,9 +473,19 @@ const BlogPosts = () => {
     <div className="container mx-auto p-4">
       <h4 className="text-3xl font-bold mb-6">Blog Posts</h4>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {posts.map(post => (
-          <Link to={`/blog/${post.slug}`} key={post.id} className="bg-white shadow-lg rounded-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300 transform hover:scale-105">
-            {post.featured_image && <img className="h-48 w-full object-cover" src={formatImageUrl(post.featured_image)} alt="Featured" />}
+        {posts.map((post) => (
+          <Link
+            to={`/blog/${post.slug}`}
+            key={post.id}
+            className="bg-white shadow-lg rounded-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300 transform hover:scale-105"
+          >
+            {post.featured_image && (
+              <img
+                className="h-48 w-full object-cover"
+                src={formatImageUrl(post.featured_image)}
+                alt="Featured"
+              />
+            )}
             <div className="p-6">
               <h6 className="text-xl font-semibold">{post.title}</h6>
             </div>
@@ -412,76 +495,188 @@ const BlogPosts = () => {
 
       <div className="flex">
         <div className="bg-white shadow-lg rounded-lg p-6 mt-10 relative w-1/2">
-          <h6 className="text-2xl font-bold mb-6">{selectedPost ? 'Update Blog Post' : 'Create Blog Post'}</h6>
+          <h6 className="text-2xl font-bold mb-6">
+            {selectedPost ? "Update Blog Post" : "Create Blog Post"}
+          </h6>
           <div className="grid grid-cols-1 gap-6">
             <div className="flex flex-col">
-              <label className="text-gray-700 mb-2" htmlFor="category">Category</label>
-              <select className="border rounded px-4 py-2" id="category" value={formData.category_id} onChange={handleCategoryChange}>
+              <label className="text-gray-700 mb-2" htmlFor="category">
+                Category
+              </label>
+              <select
+                className="border rounded px-4 py-2"
+                id="category"
+                value={formData.category_id}
+                onChange={handleCategoryChange}
+              >
                 <option value="">Select Category</option>
-                {categories.map(category => (
-                  <option key={category.id} value={category.id}>{category.name}</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
                 ))}
               </select>
             </div>
             <div className="flex flex-col">
-              <label className="text-gray-700 mb-2" htmlFor="title">Title</label>
-              <input className="border rounded px-4 py-2" id="title" placeholder="Enter the title" name="title" value={formData.title} onChange={handleInputChange} />
+              <label className="text-gray-700 mb-2" htmlFor="title">
+                Title
+              </label>
+              <input
+                className="border rounded px-4 py-2"
+                id="title"
+                placeholder="Enter the title"
+                name="title"
+                value={formData.title}
+                onChange={handleInputChange}
+              />
             </div>
             {/* <div className="flex flex-col">
               <label className="text-gray-700 mb-2" htmlFor="slug">Slug</label>
               <input className="border rounded px-4 py-2" id="slug" placeholder="Enter the slug" name="slug" value={formData.slug} onChange={handleInputChange} />
             </div> */}
             <div className="flex flex-col">
-              <label className="text-gray-700 mb-2" htmlFor="featured_image">Featured Image</label>
-              <input type="file" className="border rounded px-4 py-2" id="featured_image" name="featured_image" onChange={handleFileChange} />
-              
+              <label className="text-gray-700 mb-2" htmlFor="featured_image">
+                Featured Image
+              </label>
+              <input
+                type="file"
+                className="border rounded px-4 py-2"
+                id="featured_image"
+                name="featured_image"
+                onChange={handleFileChange}
+              />
+
               {formData.featured_image && (
-                <img src={formData.featured_image} alt="Featured" className="mt-4 max-h-64 object-contain" />
+                <img
+                  src={formData.featured_image}
+                  alt="Featured"
+                  className="mt-4 max-h-64 object-contain"
+                />
               )}
             </div>
             <h6 className="text-lg font-semibold mt-4">Main Content</h6>
-            <CKEditor editor={ClassicEditor} data={formData.content} onChange={handleContentChange} />
+            <ReactQuill
+            className="mb-20"
+              value={formData.content}
+              onChange={handleContentChange}
+              modules={modules}
+              formats={formats}
+            />
             <div className="flex flex-col">
-              <label className="text-gray-700 mb-2" htmlFor="image_one">Image One</label>
-              <input type="file" className="border rounded px-4 py-2" id="image_one" name="image_one" onChange={handleFileChange} />
-              
+              <label className="text-gray-700 mb-2" htmlFor="image_one">
+                Image One
+              </label>
+              <input
+                type="file"
+                className="border rounded px-4 py-2"
+                id="image_one"
+                name="image_one"
+                onChange={handleFileChange}
+              />
+
               {formData.image_one && (
-                <img src={formData.image_one} alt="Image One" className="mt-4 max-h-64 object-contain" />
+                <img
+                  src={formData.image_one}
+                  alt="Image One"
+                  className="mt-4 max-h-64 object-contain"
+                />
               )}
             </div>
             <h6 className="text-lg font-semibold mt-4">Content One</h6>
-            <CKEditor editor={ClassicEditor} data={formData.content_one} onChange={handleContentOneChange} />
-            <div className="flex flex-col">
-              <label className="text-gray-700 mb-2" htmlFor="social_embed">Social Embeded Url</label>
-              <input className="border rounded px-4 py-2" id="social_embed" placeholder="Enter the social embed URL" name="social_embed" value={formData.social_embed} onChange={handleInputChange} />
+            <ReactQuill
+            className="mb-20"
+
+              value={formData.content_one}
+              onChange={handleContentOneChange}
+              modules={modules}
+              formats={formats}
+            />
+              <div className="flex flex-col">
+              <label className="text-gray-700 mb-2" htmlFor="social_embed">
+                Social Embeded Url
+              </label>
+              <input
+                className="border rounded px-4 py-2"
+                id="social_embed"
+                placeholder="Enter the social embed URL"
+                name="social_embed"
+                value={formData.social_embed}
+                onChange={handleInputChange}
+              />
             </div>
             <h6 className="text-lg font-semibold mt-4">Content Two</h6>
-            <CKEditor editor={ClassicEditor} data={formData.content_two} onChange={handleContentTwoChange} />
+            <ReactQuill
+            className="mb-20"
+
+              value={formData.content_two}
+              onChange={handleContentTwoChange}
+              modules={modules}
+              formats={formats}
+            />
             <div className="flex flex-col">
-              <label className="text-gray-700 mb-2" htmlFor="image_two">Image Two</label>
-              <input type="file" className="border rounded px-4 py-2" id="image_two" name="image_two" onChange={handleFileChange} />
-              
+              <label className="text-gray-700 mb-2" htmlFor="image_two">
+                Image Two
+              </label>
+              <input
+                type="file"
+                className="border rounded px-4 py-2"
+                id="image_two"
+                name="image_two"
+                onChange={handleFileChange}
+              />
+
               {formData.image_two && (
-                <img src={formData.image_two} alt="Image Two" className="mt-4 max-h-64 object-contain" />
+                <img
+                  src={formData.image_two}
+                  alt="Image Two"
+                  className="mt-4 max-h-64 object-contain"
+                />
               )}
             </div>
             <h6 className="text-lg font-semibold mt-4">Content Three</h6>
-            <CKEditor editor={ClassicEditor} data={formData.content_three} onChange={handleContentThreeChange} />
+            <ReactQuill
+            className="mb-20"
+
+              value={formData.content_three}
+              onChange={handleContentThreeChange}
+              modules={modules}
+              formats={formats}
+            />
             <div className="flex flex-col">
-              <label className="text-gray-700 mb-2" htmlFor="excerpt">Excerpt (Short Description)</label>
-              <input className="border rounded px-4 py-2" id="excerpt" placeholder="Enter the excerpt" name="excerpt" value={formData.excerpt} onChange={handleInputChange} />
+              <label className="text-gray-700 mb-2" htmlFor="excerpt">
+                Excerpt (Short Description)
+              </label>
+              <input
+                className="border rounded px-4 py-2"
+                id="excerpt"
+                placeholder="Enter the excerpt"
+                name="excerpt"
+                value={formData.excerpt}
+                onChange={handleInputChange}
+              />
             </div>
             <div className="flex flex-col">
-              <label className="text-gray-700 mb-2" htmlFor="author">Author</label>
-              <select className="border rounded px-4 py-2" id="author" value={formData.author_id} onChange={handleAuthorChange}>
+              <label className="text-gray-700 mb-2" htmlFor="author">
+                Author
+              </label>
+              <select
+                className="border rounded px-4 py-2"
+                id="author"
+                value={formData.author_id}
+                onChange={handleAuthorChange}
+              >
                 <option value="">Select Author</option>
-                {authors.map(author => (
-                  <option key={author.id} value={author.id}>{author.name}</option>
+                {authors.map((author) => (
+                  <option key={author.id} value={author.id}>
+                    {author.name}
+                  </option>
                 ))}
               </select>
             </div>
             <div className="relative flex flex-col" ref={tagDropdownRef}>
-              <label className="text-gray-700 mb-2" htmlFor="tags">Tags</label>
+              <label className="text-gray-700 mb-2" htmlFor="tags">
+                Tags
+              </label>
               <button
                 className="border rounded px-4 py-5 text-left bg-white"
                 id="tags"
@@ -491,7 +686,7 @@ const BlogPosts = () => {
               </button>
               {tagDropdownOpen && (
                 <div className="absolute bg-white border rounded mt-1 shadow-lg z-20 max-h-60 overflow-y-auto w-full">
-                  {tags.map(tag => (
+                  {tags.map((tag) => (
                     <label key={tag.id} className="flex items-center p-2">
                       <input
                         type="checkbox"
@@ -513,15 +708,47 @@ const BlogPosts = () => {
               </select>
             </div> */}
             <div className="flex flex-col">
-              <label className="text-gray-700 mb-2" htmlFor="seo_title">SEO Title</label>
-              <input className="border rounded px-4 py-2" id="seo_title" placeholder="Enter the SEO title" name="seo_title" value={formData.seo_title} onChange={handleInputChange} />
+              <label className="text-gray-700 mb-2" htmlFor="seo_title">
+                SEO Title
+              </label>
+              <input
+                className="border rounded px-4 py-2"
+                id="seo_title"
+                placeholder="Enter the SEO title"
+                name="seo_title"
+                value={formData.seo_title}
+                onChange={handleInputChange}
+              />
             </div>
             <div className="flex flex-col">
-              <label className="text-gray-700 mb-2" htmlFor="seo_description">SEO Description</label>
-              <input className="border rounded px-4 py-2" id="seo_description" placeholder="Enter the SEO description" name="seo_description" value={formData.seo_description} onChange={handleInputChange} />
+              <label className="text-gray-700 mb-2" htmlFor="seo_description">
+                SEO Description
+              </label>
+              <input
+                className="border rounded px-4 py-2"
+                id="seo_description"
+                placeholder="Enter the SEO description"
+                name="seo_description"
+                value={formData.seo_description}
+                onChange={handleInputChange}
+              />
             </div>
-            <button className="bg-blue-600 text-white rounded px-6 py-2 mt-4 hover:bg-blue-700 transition-colors" onClick={selectedPost ? () => updatePost(selectedPost.id) : createPost}>{selectedPost ? 'Update Post' : 'Create Post'}</button>
-            {selectedPost && <button className="bg-red-600 text-white rounded px-6 py-2 mt-2 hover:bg-red-700 transition-colors" onClick={() => deletePost(selectedPost.id)}>Delete Post</button>}
+            <button
+              className="bg-blue-600 text-white rounded px-6 py-2 mt-4 hover:bg-blue-700 transition-colors"
+              onClick={
+                selectedPost ? () => updatePost(selectedPost.id) : createPost
+              }
+            >
+              {selectedPost ? "Update Post" : "Create Post"}
+            </button>
+            {selectedPost && (
+              <button
+                className="bg-red-600 text-white rounded px-6 py-2 mt-2 hover:bg-red-700 transition-colors"
+                onClick={() => deletePost(selectedPost.id)}
+              >
+                Delete Post
+              </button>
+            )}
           </div>
         </div>
         <div className="w-1/2 mt-20">
@@ -529,17 +756,27 @@ const BlogPosts = () => {
         </div>
       </div>
       <div>
-      <h4 className="text-3xl font-bold mt-12 mb-6">Archived Blogs</h4>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {archivedPosts.map(post => (
-          <Link to={`/blog/${post.slug}`} key={post.id} className="bg-white shadow-lg rounded-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300 transform hover:scale-105">
-            {post.featured_image && <img className="h-48 w-full object-cover" src={formatImageUrl(post.featured_image)} alt="Featured" />}
-            <div className="p-6">
-              <h6 className="text-xl font-semibold">{post.title}</h6>
-            </div>
-          </Link>
-        ))}
-      </div>
+        <h4 className="text-3xl font-bold mt-12 mb-6">Archived Blogs</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {archivedPosts.map((post) => (
+            <Link
+              to={`/blog/${post.slug}`}
+              key={post.id}
+              className="bg-white shadow-lg rounded-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300 transform hover:scale-105"
+            >
+              {post.featured_image && (
+                <img
+                  className="h-48 w-full object-cover"
+                  src={formatImageUrl(post.featured_image)}
+                  alt="Featured"
+                />
+              )}
+              <div className="p-6">
+                <h6 className="text-xl font-semibold">{post.title}</h6>
+              </div>
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -10,6 +10,8 @@ import Users from './components/Users';
 import Comments from './components/Comments';
 import Likes from './components/Likes';
 import InstagramPosts from './components/InstagramPosts'; // Import InstagramPosts
+import 'react-quill/dist/quill.snow.css';
+
 
 const App = () => {
   return (
