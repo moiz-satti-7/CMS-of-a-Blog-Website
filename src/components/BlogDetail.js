@@ -23,11 +23,11 @@ const BlogDetail = () => {
     social_embed: '',
     image_one: '',
     image_two: '',
+    featured_image: '',
     author_id: '',
     category_id: '',
     tags: [],
     status: 'Active',
-    featured_image: '',
     excerpt: '',
     seo_title: '',
     seo_description: '',
@@ -183,10 +183,22 @@ const BlogDetail = () => {
   const handleFileChange = async (e) => {
     const { name } = e.target;
     const file = e.target.files[0];
+
     if (file) {
+      // Create a preview URL for the image
+      const previewUrl = URL.createObjectURL(file);
+      setFormData((prevFormData) => ({
+        ...prevFormData,
+        [`${name}_preview`]: previewUrl,
+      }));
+
+      // Upload the image and update the form data with the Cloudflare URL
       const uploadUrl = await uploadFileToCloudflare(file, file.name);
       if (uploadUrl) {
-        setFormData({ ...formData, [name]: uploadUrl });
+        setFormData((prevFormData) => ({
+          ...prevFormData,
+          [name]: uploadUrl,
+        }));
       }
     }
   };
@@ -463,7 +475,12 @@ const BlogDetail = () => {
               <div className="flex flex-col">
                 <label className="text-gray-700 mb-2" htmlFor="featured_image">Featured Image</label>
                 <input type="file" className="border rounded px-4 py-2" id="featured_image" name="featured_image" onChange={handleFileChange} />
-                {formData.featured_image && (
+                {formData.featured_image_preview && (
+                  <div>
+                    <img src={formData.featured_image_preview} alt="Featured Preview" className="mt-4 max-h-64 object-contain" />
+                  </div>
+                )}
+                {formData.featured_image && !formData.featured_image_preview && (
                   <div>
                     <img src={formatImageUrl(formData.featured_image)} alt="Featured" className="mt-4 max-h-64 object-contain" />
                     <button className="bg-red-600 text-white rounded px-4 py-2 mt-2 hover:bg-red-700 transition-colors" onClick={() => handleImageRemove('featured_image')}>
@@ -479,7 +496,12 @@ const BlogDetail = () => {
               <div className="flex flex-col">
                 <label className="text-gray-700 mb-2" htmlFor="image_one">Image One</label>
                 <input type="file" className="border rounded px-4 py-2" id="image_one" name="image_one" onChange={handleFileChange} />
-                {formData.image_one && (
+                {formData.image_one_preview && (
+                  <div>
+                    <img src={formData.image_one_preview} alt="Image One Preview" className="mt-4 max-h-64 object-contain" />
+                  </div>
+                )}
+                {formData.image_one && !formData.image_one_preview && (
                   <div>
                     <img src={formatImageUrl(formData.image_one)} alt="Image One" className="mt-4 max-h-64 object-contain" />
                     <button className="bg-red-600 text-white rounded px-4 py-2 mt-2 hover:bg-red-700 transition-colors" onClick={() => handleImageRemove('image_one')}>
@@ -503,9 +525,14 @@ const BlogDetail = () => {
               <div className="flex flex-col">
                 <label className="text-gray-700 mb-2" htmlFor="image_two">Image Two</label>
                 <input type="file" className="border rounded px-4 py-2" id="image_two" name="image_two" onChange={handleFileChange} />
-                {formData.image_two && (
+                {formData.image_two_preview && (
                   <div>
-                    <img src={formatImageUrl(formData.image_two)}  alt="Image Two" className="mt-4 max-h-64 object-contain" />
+                    <img src={formData.image_two_preview} alt="Image Two Preview" className="mt-4 max-h-64 object-contain" />
+                  </div>
+                )}
+                {formData.image_two && !formData.image_two_preview && (
+                  <div>
+                    <img src={formatImageUrl(formData.image_two)} alt="Image Two" className="mt-4 max-h-64 object-contain" />
                     <button className="bg-red-600 text-white rounded px-2 py-1 mt-2 hover:bg-red-700 transition-colors" onClick={() => handleImageRemove('image_two')}>
                       Remove
                     </button>

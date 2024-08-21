@@ -196,10 +196,22 @@ const BlogPosts = () => {
   const handleFileChange = async (e) => {
     const { name } = e.target;
     const file = e.target.files[0];
+
     if (file) {
+      // Create a preview URL for the image
+      const previewUrl = URL.createObjectURL(file);
+      setFormData((prevFormData) => ({
+        ...prevFormData,
+        [`${name}_preview`]: previewUrl,
+      }));
+
+      // Upload the image and update the form data with the Cloudflare URL
       const uploadUrl = await uploadFileToCloudflare(file, file.name);
       if (uploadUrl) {
-        setFormData({ ...formData, [name]: uploadUrl });
+        setFormData((prevFormData) => ({
+          ...prevFormData,
+          [name]: uploadUrl,
+        }));
       }
     }
   };
@@ -272,7 +284,7 @@ const BlogPosts = () => {
     }
 
     // Construct the blog post URL
-    const blogPostUrl = `https://dev-v2.atvandbuggy.com?_vercel_share=ZIVIOzCMtBMX3t6u66ruikvPIkRhL41R=${newBlogRef.id}`;
+    const blogPostUrl = `https://dev-v2.atvandbuggy.com/blogs/details/${formData.slug}`;
 
     // Fetch all subscribers
     const subscribersSnapshot = await getDocs(
@@ -329,23 +341,23 @@ const BlogPosts = () => {
 
   const handleFileUploads = async () => {
     const fileFields = ["featured_image", "image_one", "image_two"];
+
+    // Map over each file field to handle the upload
     const uploadPromises = fileFields.map(async (field) => {
-      const fileInput = document.getElementById(field);
-      if (fileInput && fileInput.files[0]) {
-        const uploadUrl = await uploadFileToCloudflare(
-          fileInput.files[0],
-          fileInput.files[0].name
-        );
-        return { [field]: uploadUrl };
+      if (formData[field]) {
+        return { [field]: formData[field] };
       }
       return null;
     });
 
+    // Resolve all uploads simultaneously
     const results = await Promise.all(uploadPromises);
     const updatedData = results.reduce(
       (acc, curr) => (curr ? { ...acc, ...curr } : acc),
       {}
     );
+
+    // Update the form data with the uploaded URLs
     setFormData((prevData) => ({ ...prevData, ...updatedData }));
   };
 
@@ -546,17 +558,17 @@ const BlogPosts = () => {
                 onChange={handleFileChange}
               />
 
-              {formData.featured_image && (
+              {formData.featured_image_preview && (
                 <img
-                  src={formData.featured_image}
-                  alt="Featured"
+                  src={formData.featured_image_preview}
+                  alt="Featured Preview"
                   className="mt-4 max-h-64 object-contain"
                 />
               )}
             </div>
             <h6 className="text-lg font-semibold mt-4">Main Content</h6>
             <ReactQuill
-            className="mb-20"
+              className="mb-20"
               value={formData.content}
               onChange={handleContentChange}
               modules={modules}
@@ -574,24 +586,23 @@ const BlogPosts = () => {
                 onChange={handleFileChange}
               />
 
-              {formData.image_one && (
+              {formData.image_one_preview && (
                 <img
-                  src={formData.image_one}
-                  alt="Image One"
+                  src={formData.image_one_preview}
+                  alt="Image One Preview"
                   className="mt-4 max-h-64 object-contain"
                 />
               )}
             </div>
             <h6 className="text-lg font-semibold mt-4">Content One</h6>
             <ReactQuill
-            className="mb-20"
-
+              className="mb-20"
               value={formData.content_one}
               onChange={handleContentOneChange}
               modules={modules}
               formats={formats}
             />
-              <div className="flex flex-col">
+            <div className="flex flex-col">
               <label className="text-gray-700 mb-2" htmlFor="social_embed">
                 Social Embeded Url
               </label>
@@ -606,8 +617,7 @@ const BlogPosts = () => {
             </div>
             <h6 className="text-lg font-semibold mt-4">Content Two</h6>
             <ReactQuill
-            className="mb-20"
-
+              className="mb-20"
               value={formData.content_two}
               onChange={handleContentTwoChange}
               modules={modules}
@@ -625,18 +635,17 @@ const BlogPosts = () => {
                 onChange={handleFileChange}
               />
 
-              {formData.image_two && (
+              {formData.image_two_preview && (
                 <img
-                  src={formData.image_two}
-                  alt="Image Two"
+                  src={formData.image_two_preview}
+                  alt="Image  Two Preview"
                   className="mt-4 max-h-64 object-contain"
                 />
               )}
             </div>
             <h6 className="text-lg font-semibold mt-4">Content Three</h6>
             <ReactQuill
-            className="mb-20"
-
+              className="mb-20"
               value={formData.content_three}
               onChange={handleContentThreeChange}
               modules={modules}
