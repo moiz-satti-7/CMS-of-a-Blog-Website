@@ -11,8 +11,7 @@ import Comments from './components/Comments';
 import Likes from './components/Likes';
 import InstagramPosts from './components/InstagramPosts'; // Import InstagramPosts
 import 'react-quill/dist/quill.snow.css';
-
-
+import "./App.css";
 
 const App = () => {
   return (
@@ -20,11 +19,11 @@ const App = () => {
       <Router>
         <div>
           <nav>
-          <ul className="flex justify-center space-x-4 my-4">
+          <ul className="flex justify-center space-x-4 mb-4 mt-10">
   <li>
     <Link 
       to="/" 
-      className="inline-block bg-blue-500 text-white font-semibold text-xl py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
+      className="inline-block clr-category text-white font-semibold text-xl py-2 px-4 rounded transition duration-300"
     >
       Blog Posts
     </Link>
@@ -32,7 +31,7 @@ const App = () => {
   <li>
     <Link 
       to="/categories" 
-      className="inline-block bg-blue-500 text-white font-semibold text-xl py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
+      className="inline-block clr-category text-white font-semibold text-xl py-2 px-4 rounded transition duration-300"
     >
       Categories
     </Link>
@@ -40,7 +39,7 @@ const App = () => {
   <li>
     <Link 
       to="/authors" 
-      className="inline-block bg-blue-500 text-white font-semibold text-xl py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
+      className="inline-block clr-category text-white font-semibold text-xl py-2 px-4 rounded transition duration-300"
     >
       Authors
     </Link>
@@ -48,23 +47,26 @@ const App = () => {
   <li>
     <Link 
       to="/InstagramPosts" 
-      className="inline-block bg-blue-500 text-white font-semibold text-xl py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
+      className="inline-block clr-category text-white font-semibold text-xl py-2 px-4 rounded transition duration-300"
     >
       Instagram Posts
     </Link>
   </li>
-  <li>
+
+{/* This the navbar link for the tags section, could be un-comment if changes are required for placing the blogs  */}
+
+  {/* <li>
     <Link 
       to="/tags" 
-      className="inline-block bg-blue-500 text-white font-semibold text-xl py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
+      className="inline-block clr-category text-white font-semibold text-xl py-2 px-4 rounded transition duration-300"
     >
       Tags
     </Link>
-  </li>
+  </li> */}
   <li>
     <Link 
       to="/users" 
-      className="inline-block bg-blue-500 text-white font-semibold text-xl py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
+      className="inline-block clr-category text-white font-semibold text-xl py-2 px-4 rounded transition duration-300"
     >
       Users
     </Link>
@@ -72,7 +74,7 @@ const App = () => {
   <li>
     <Link 
       to="/comments" 
-      className="inline-block bg-blue-500 text-white font-semibold text-xl py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
+      className="inline-block clr-category text-white font-semibold text-xl py-2 px-4 rounded transition duration-300"
     >
       Comments
     </Link>
@@ -80,7 +82,7 @@ const App = () => {
   <li>
     <Link 
       to="/likes" 
-      className="inline-block bg-blue-500 text-white font-semibold text-xl py-2 px-4 rounded hover:bg-blue-700 transition duration-300"
+      className="inline-block clr-category text-white font-semibold text-xl py-2 px-4 rounded transition duration-300"
     >
       Likes
     </Link>

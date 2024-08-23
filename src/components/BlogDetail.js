@@ -268,7 +268,45 @@ const BlogDetail = () => {
     setFormData((prevFormData) => ({ ...prevFormData, slug: uniqueSlug }));
   }, 300);
 
+
+
+// Validation Check 
+
+const validateForm = () => {
+  const errors = [];
+
+  if (!formData.category_id.trim()) {
+    errors.push("Category is required.");
+  }
+
+  if (!formData.title.trim()) {
+    errors.push("Title is required.");
+  }
+
+  if (!formData.author_id.trim()) {
+    errors.push("Author is required.");
+  }
+
+  if (formData.tags.length === 0) {
+    errors.push("At least one Tag is required.");
+  }
+
+  if (!formData.excerpt.trim()) {
+    errors.push("Excerpt is required.");
+  }
+
+  return errors;
+};
+
+
   const updatePost = async () => {
+
+    const errors = validateForm();
+    if (errors.length > 0) {
+      alert(errors.join("\n")); // You can customize this to display errors more gracefully
+      return;
+    }
+
     const collectionName = formData.status === 'Active' ? 'blogpost' : 'archieveblogs';
     const postRef = doc(db, collectionName, post.id);
     await updateDoc(postRef, { ...formData, updated_date: new Date() });

@@ -1,17 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGlobalState } from '../GlobalState';
 import { db } from '../firebase';
-import { collection, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import axios from 'axios';
 
 const Authors = () => {
-  const { authors, setAuthors } = useGlobalState();  // Use global state for authors
+  const { authors, setAuthors } = useGlobalState(); // Use global state for authors
   const [formData, setFormData] = useState({ id: '', name: '', email: '', bio: '', author_image: '' });
   const [imageFile, setImageFile] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [editing, setEditing] = useState(false);
   const [showModal, setShowModal] = useState(false);
+
+  useEffect(() => {
+    // Subscribe to real-time updates from Firestore
+    const unsubscribe = onSnapshot(collection(db, 'author'), (snapshot) => {
+      const authorsList = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setAuthors(authorsList);
+    });
+
+    return () => unsubscribe(); // Cleanup listener on unmount
+  }, [setAuthors]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -56,30 +69,53 @@ const Authors = () => {
   const saveAuthor = async () => {
     setSaving(true);
     setError(null);
-    try {
-      const imageUrl = await uploadImageToCloudflare(imageFile);
-      if (editing) {
-        // Updating an existing author
-        const authorRef = doc(db, 'author', formData.id);
-        await setDoc(authorRef, { ...formData, author_image: imageUrl });
-        setAuthors(authors.map(author => (author.id === formData.id ? { ...formData, author_image: imageUrl } : author)));
-        setEditing(false);
-      } else {
-        // Creating a new author
-        const docRef = doc(collection(db, 'author'));
-        await setDoc(docRef, { ...formData, id: docRef.id, author_image: imageUrl });
-        setAuthors([...authors, { id: docRef.id, ...formData, author_image: imageUrl }]);
-      }
-      setFormData({ id: '', name: '', email: '', bio: '', author_image: '' });
-      setImageFile(null);
-      setShowModal(false);
-    } catch (err) {
-      console.error("Error saving author: ", err);
-      setError('Failed to save author.');
-    } finally {
-      setSaving(false);
+
+    // Validation: Check if required fields are filled
+    if (!formData.name.trim() || !formData.bio.trim() || (!imageFile && !formData.author_image)) {
+        setError('Name, Bio, and Image are required.');
+        setSaving(false);
+        return;
     }
-  };
+
+    try {
+        let imageUrl = formData.author_image; // Default to existing image URL
+
+        // Only upload if a new image file is selected
+        if (imageFile) {
+            const uploadedUrl = await uploadImageToCloudflare(imageFile);
+            if (uploadedUrl) {
+                imageUrl = uploadedUrl;
+            } else {
+                setError('Failed to upload image.');
+                setSaving(false);
+                return;
+            }
+        }
+
+        if (editing) {
+            // Updating an existing author
+            const authorRef = doc(db, 'author', formData.id);
+            await setDoc(authorRef, { ...formData, author_image: imageUrl }, { merge: true }); // merge ensures only fields in formData are updated
+            setAuthors(authors.map(author => (author.id === formData.id ? { ...formData, author_image: imageUrl } : author)));
+            setEditing(false);
+        } else {
+            // Creating a new author
+            const docRef = doc(collection(db, 'author'));
+            await setDoc(docRef, { ...formData, id: docRef.id, author_image: imageUrl });
+            setAuthors([...authors, { id: docRef.id, ...formData, author_image: imageUrl }]);
+        }
+
+        setFormData({ id: '', name: '', email: '', bio: '', author_image: '' });
+        setImageFile(null);
+        setShowModal(false);
+    } catch (err) {
+        console.error("Error saving author: ", err);
+        setError('Failed to save author.');
+    } finally {
+        setSaving(false);
+    }
+};
+
 
   const editAuthor = (author) => {
     setFormData(author);
@@ -96,42 +132,6 @@ const Authors = () => {
       setError('Failed to delete author.');
     }
   };
-
-
-
-// To Upload Image to Cloud Flare 
-
-
-
-const uploadFileToCloudflare = async (file, fileName) => {
-  try {
-    const formData = new FormData();
-    formData.append('image', file, fileName);
-
-    const response = await axios.post(
-      'https://cloudflare.cedrics.se/api/upload-anb-file-Images-to-cloudflare',
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${process.env.REACT_APP_CLOUDFLARE_API_KEY}`,
-        },
-      }
-    );
-
-    if (response.status === 200) {
-      const { image_id: downloadUrl } = response.data;
-      return downloadUrl;
-    } else {
-      console.error(`Error in uploading file: ${response.status}`);
-      return null;
-    }
-  } catch (error) {
-    console.error('Error uploading file:', error);
-    return error;
-  }
-};
-
 
   const formatImageUrl = (url) => {
     return url.startsWith("http")
@@ -155,7 +155,7 @@ const uploadFileToCloudflare = async (file, fileName) => {
         ))}
       </div>
       <div className="bg-white shadow-md p-4 rounded mt-4">
-        <h2 className="text-xl font-semibold mb-2">Create Author</h2>
+        <h2 className="text-xl font-semibold mb-2">{editing ? 'Edit Author' : 'Create Author'}</h2>
         <div className="flex flex-col gap-2">
           <input 
             className="border p-2 rounded" 
@@ -192,7 +192,7 @@ const uploadFileToCloudflare = async (file, fileName) => {
             onClick={saveAuthor} 
             disabled={saving}
           >
-            {saving ? 'Saving...' : 'Create Author'}
+            {saving ? 'Saving...' : editing ? 'Update Author' : 'Create Author'}
           </button>
         </div>
       </div>

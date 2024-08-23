@@ -1,3 +1,15 @@
-*{
-    background: black !important;
+.clr-category {
+  background-color: #dd6a28;
+}
+
+.clr-category:hover {
+  background-color: #99400d;
+}
+
+.instagram-bg {
+  background-color: #d3d3d3;
+}
+
+.instagram-bg:hover {
+  background-color: #a8a8a8;
 }

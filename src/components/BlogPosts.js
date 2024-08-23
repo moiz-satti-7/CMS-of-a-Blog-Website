@@ -73,6 +73,8 @@ const BlogPosts = () => {
   const [tags, setTags] = useState([]);
   const [tagDropdownOpen, setTagDropdownOpen] = useState(false);
   const tagDropdownRef = useRef(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
 
   useEffect(() => {
     const fetchAuthors = () => {
@@ -260,13 +262,56 @@ const BlogPosts = () => {
     setFormData({ ...formData, status: e.target.value });
   };
 
-  const createPost = async () => {
+
+// Validation Check 
+
+const validateForm = () => {
+  const errors = [];
+
+  if (!formData.category_id.trim()) {
+    errors.push("Category is required.");
+  }
+
+  if (!formData.title.trim()) {
+    errors.push("Title is required.");
+  }
+
+  if (!formData.author_id.trim()) {
+    errors.push("Author is required.");
+  }
+
+  if (formData.tags.length === 0) {
+    errors.push("At least one Tag is required.");
+  }
+
+  if (!formData.excerpt.trim()) {
+    errors.push("Excerpt is required.");
+  }
+
+  return errors;
+};
+
+
+
+const createPost = async () => {
+  const errors = validateForm();
+  if (errors.length > 0) {
+    alert(errors.join("\n")); // You can customize this to display errors more gracefully
+    return;
+  }
+
+  // Prevent multiple submissions
+  if (isSubmitting) return;
+
+  setIsSubmitting(true); // Start submission process
+
+  try {
     await handleFileUploads();
     const collectionName =
       formData.status === "Active" ? "blogpost" : "archieveblogs";
 
     // Add the new blog post to Firestore
-    const newBlogRef = await addDoc(collection(db, collectionName), {
+    await addDoc(collection(db, collectionName), {
       ...formData,
       published_date: new Date(),
     });
@@ -290,7 +335,9 @@ const BlogPosts = () => {
     const subscribersSnapshot = await getDocs(
       collection(db, "blogsSubscribers")
     );
-    const subscribers = subscribersSnapshot.docs.map((doc) => doc.data().email);
+    const subscribers = subscribersSnapshot.docs.map(
+      (doc) => doc.data().email
+    );
 
     // Send email to all subscribers
     try {
@@ -307,10 +354,27 @@ const BlogPosts = () => {
       alert("Blog post created, but failed to send notification emails.");
     }
 
+    // Clear form fields after successful post creation
     clearForm();
-  };
+  } catch (error) {
+    console.error("Error creating post: ", error);
+    alert("Failed to create the blog post. Please try again.");
+  } finally {
+    setIsSubmitting(false); // End submission process
+  }
+};
+
+
+
 
   const updatePost = async (id) => {
+
+    const errors = validateForm();
+    if (errors.length > 0) {
+      alert(errors.join("\n")); // You can customize this to display errors more gracefully
+      return;
+    }
+
     await handleFileUploads();
     const collectionName =
       formData.status === "Active" ? "blogpost" : "archieveblogs";
@@ -483,7 +547,7 @@ const BlogPosts = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <h4 className="text-3xl font-bold mb-6">Blog Posts</h4>
+      <h1 className="text-5xl font-semibold mb-20 mt-10 text-center underline">Blog Posts</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {posts.map((post) => (
           <Link
@@ -507,12 +571,12 @@ const BlogPosts = () => {
 
       <div className="flex">
         <div className="bg-white shadow-lg rounded-lg p-6 mt-10 relative w-1/2">
-          <h6 className="text-2xl font-bold mb-6">
-            {selectedPost ? "Update Blog Post" : "Create Blog Post"}
+          <h6 className="text-4xl font-semibold mb-10 text-center underline">
+            {selectedPost ? "Update Blog Post" : "Create New Blog Post"}
           </h6>
           <div className="grid grid-cols-1 gap-6">
             <div className="flex flex-col">
-              <label className="text-gray-700 mb-2" htmlFor="category">
+              <label className="font-semibold text-2xl my-5" htmlFor="category">
                 Category
               </label>
               <select
@@ -530,7 +594,7 @@ const BlogPosts = () => {
               </select>
             </div>
             <div className="flex flex-col">
-              <label className="text-gray-700 mb-2" htmlFor="title">
+              <label className="font-semibold text-2xl my-5" htmlFor="title">
                 Title
               </label>
               <input
@@ -543,11 +607,11 @@ const BlogPosts = () => {
               />
             </div>
             {/* <div className="flex flex-col">
-              <label className="text-gray-700 mb-2" htmlFor="slug">Slug</label>
+              <label className="font-semibold text-2xl my-5" htmlFor="slug">Slug</label>
               <input className="border rounded px-4 py-2" id="slug" placeholder="Enter the slug" name="slug" value={formData.slug} onChange={handleInputChange} />
             </div> */}
             <div className="flex flex-col">
-              <label className="text-gray-700 mb-2" htmlFor="featured_image">
+              <label className="font-semibold text-2xl my-5" htmlFor="featured_image">
                 Featured Image
               </label>
               <input
@@ -566,7 +630,7 @@ const BlogPosts = () => {
                 />
               )}
             </div>
-            <h6 className="text-lg font-semibold mt-4">Main Content</h6>
+            <h6 className="font-semibold text-2xl mt-10">Main Content</h6>
             <ReactQuill
               className="mb-20"
               value={formData.content}
@@ -575,7 +639,7 @@ const BlogPosts = () => {
               formats={formats}
             />
             <div className="flex flex-col">
-              <label className="text-gray-700 mb-2" htmlFor="image_one">
+              <label className="font-semibold text-2xl my-5" htmlFor="image_one">
                 Image One
               </label>
               <input
@@ -594,7 +658,7 @@ const BlogPosts = () => {
                 />
               )}
             </div>
-            <h6 className="text-lg font-semibold mt-4">Content One</h6>
+            <h6 className="font-semibold text-2xl mt-10">Content One</h6>
             <ReactQuill
               className="mb-20"
               value={formData.content_one}
@@ -603,8 +667,8 @@ const BlogPosts = () => {
               formats={formats}
             />
             <div className="flex flex-col">
-              <label className="text-gray-700 mb-2" htmlFor="social_embed">
-                Social Embeded Url
+              <label className="font-semibold text-2xl my-5" htmlFor="social_embed">
+                YouTube Embeded Url  <span className="text-xl ms-2">(optional)</span>
               </label>
               <input
                 className="border rounded px-4 py-2"
@@ -615,7 +679,7 @@ const BlogPosts = () => {
                 onChange={handleInputChange}
               />
             </div>
-            <h6 className="text-lg font-semibold mt-4">Content Two</h6>
+            <h6 className="font-semibold text-2xl mt-10">Content Two</h6>
             <ReactQuill
               className="mb-20"
               value={formData.content_two}
@@ -624,7 +688,7 @@ const BlogPosts = () => {
               formats={formats}
             />
             <div className="flex flex-col">
-              <label className="text-gray-700 mb-2" htmlFor="image_two">
+              <label className="font-semibold text-2xl my-5" htmlFor="image_two">
                 Image Two
               </label>
               <input
@@ -643,7 +707,7 @@ const BlogPosts = () => {
                 />
               )}
             </div>
-            <h6 className="text-lg font-semibold mt-4">Content Three</h6>
+            <h6 className="font-semibold text-2xl mt-10">Content Three</h6>
             <ReactQuill
               className="mb-20"
               value={formData.content_three}
@@ -652,8 +716,8 @@ const BlogPosts = () => {
               formats={formats}
             />
             <div className="flex flex-col">
-              <label className="text-gray-700 mb-2" htmlFor="excerpt">
-                Excerpt (Short Description)
+              <label className="font-semibold text-2xl my-5" htmlFor="excerpt">
+                Excerpt <span className="text-xl ms-3"> (Short Description) </span> 
               </label>
               <input
                 className="border rounded px-4 py-2"
@@ -665,7 +729,7 @@ const BlogPosts = () => {
               />
             </div>
             <div className="flex flex-col">
-              <label className="text-gray-700 mb-2" htmlFor="author">
+              <label className="font-semibold text-2xl my-5" htmlFor="author">
                 Author
               </label>
               <select
@@ -683,8 +747,8 @@ const BlogPosts = () => {
               </select>
             </div>
             <div className="relative flex flex-col" ref={tagDropdownRef}>
-              <label className="text-gray-700 mb-2" htmlFor="tags">
-                Tags
+              <label className="font-semibold text-2xl my-5" htmlFor="tags">
+                Tags <span className="text-xl ms-3"> (Select where to show blog) </span>
               </label>
               <button
                 className="border rounded px-4 py-5 text-left bg-white"
@@ -710,14 +774,14 @@ const BlogPosts = () => {
               )}
             </div>
             {/* <div className="flex flex-col">
-              <label className="text-gray-700 mb-2" htmlFor="status">Status</label>
+              <label className="font-semibold text-2xl my-5" htmlFor="status">Status</label>
               <select className="border rounded px-4 py-2" id="status" value={formData.status} onChange={handleStatusChange}>
                 <option value="Active">Active</option>
                 <option value="Archived">Archived</option>
               </select>
             </div> */}
             <div className="flex flex-col">
-              <label className="text-gray-700 mb-2" htmlFor="seo_title">
+              <label className="font-semibold text-2xl my-5" htmlFor="seo_title">
                 SEO Title
               </label>
               <input
@@ -730,7 +794,7 @@ const BlogPosts = () => {
               />
             </div>
             <div className="flex flex-col">
-              <label className="text-gray-700 mb-2" htmlFor="seo_description">
+              <label className="font-semibold text-2xl my-5" htmlFor="seo_description">
                 SEO Description
               </label>
               <input
@@ -743,13 +807,13 @@ const BlogPosts = () => {
               />
             </div>
             <button
-              className="bg-blue-600 text-white rounded px-6 py-2 mt-4 hover:bg-blue-700 transition-colors"
-              onClick={
-                selectedPost ? () => updatePost(selectedPost.id) : createPost
-              }
-            >
-              {selectedPost ? "Update Post" : "Create Post"}
-            </button>
+  className={`clr-category text-white text-2xl font-semibold rounded px-6 py-2 mt-4 transition-colors ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+  onClick={selectedPost ? () => updatePost(selectedPost.id) : createPost}
+  disabled={isSubmitting}
+>
+  {isSubmitting ? "Saving..." : selectedPost ? "Update Post" : "Create Post"}
+</button>
+
             {selectedPost && (
               <button
                 className="bg-red-600 text-white rounded px-6 py-2 mt-2 hover:bg-red-700 transition-colors"
@@ -764,29 +828,33 @@ const BlogPosts = () => {
           <img src="/images/template.jpg" alt="Template Format" />
         </div>
       </div>
-      <div>
-        <h4 className="text-3xl font-bold mt-12 mb-6">Archived Blogs</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {archivedPosts.map((post) => (
-            <Link
-              to={`/blog/${post.slug}`}
-              key={post.id}
-              className="bg-white shadow-lg rounded-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300 transform hover:scale-105"
-            >
-              {post.featured_image && (
-                <img
-                  className="h-48 w-full object-cover"
-                  src={formatImageUrl(post.featured_image)}
-                  alt="Featured"
-                />
-              )}
-              <div className="p-6">
-                <h6 className="text-xl font-semibold">{post.title}</h6>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </div>
+    <div className="my-10">
+    <h4 className="text-4xl font-semibold my-10 text-center underline">Archived Blogs</h4>
+  {archivedPosts.length > 0 ? (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {archivedPosts.map((post) => (
+        <Link
+          to={`/blog/${post.slug}`}
+          key={post.id}
+          className="bg-white shadow-lg rounded-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300 transform hover:scale-105"
+        >
+          {post.featured_image && (
+            <img
+              className="h-48 w-full object-cover"
+              src={formatImageUrl(post.featured_image)}
+              alt="Featured"
+            />
+          )}
+          <div className="p-6">
+            <h6 className="text-xl font-semibold">{post.title}</h6>
+          </div>
+        </Link>
+      ))}
+    </div>
+  ) : (
+    <p className="text-gray-700 text-xl font-bold text-center">No blog archived yet!</p>
+  )}
+</div>
     </div>
   );
 };
